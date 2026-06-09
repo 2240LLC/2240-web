@@ -45,7 +45,7 @@
     body {
       background: var(--bg);
       color: var(--title);
-      font-family: 'Courier New', 'Menlo', monospace;
+      font-family: 'Menlo', 'Courier New', monospace;
       transition: background 0.2s, color 0.2s;
       min-height: 100svh;
     }
@@ -147,12 +147,15 @@
     <h1>Room Impulse Response<br>&amp; Reverb Simulation</h1>
     <p class="meta-line">MATLAB · Digital Signal Processing</p>
 
-    <video src="matlab-reverb.mp4" controls playsinline></video>
+    <video src="matlab-reverb.mp4" controls playsinline
+           aria-label="Demo: Room Impulse Response and Reverb Simulation">
+      Your browser does not support the video tag.
+    </video>
 
-    <div class="section-label">About</div>
+    <h2 class="section-label">About</h2>
     <p class="desc">Modeled a room's acoustic impulse response and applied it via convolution to produce a realistic reverb effect in MATLAB.</p>
 
-    <div class="section-label">Tech</div>
+    <h2 class="section-label">Tech</h2>
     <div class="pills">
       <span class="pill">MATLAB</span>
       <span class="pill">Digital Signal Processing</span>
@@ -168,12 +171,14 @@
       var stored    = localStorage.getItem('theme');
       var preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
       document.documentElement.setAttribute('data-theme', stored || preferred);
+      document.getElementById('theme-toggle').setAttribute('aria-pressed', (stored || preferred) === 'dark' ? 'true' : 'false');
 
       document.getElementById('theme-toggle').addEventListener('click', function () {
         var current = document.documentElement.getAttribute('data-theme');
         var next    = current === 'dark' ? 'light' : 'dark';
         document.documentElement.setAttribute('data-theme', next);
         localStorage.setItem('theme', next);
+        this.setAttribute('aria-pressed', next === 'dark' ? 'true' : 'false');
       });
     })();
   </script>
