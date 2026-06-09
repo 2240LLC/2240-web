@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ripe — Coming Soon</title>
+  <meta name="description" content="Ripe is almost ready. A grocery list and pantry tracker for iOS with a pixel-art twist. Sign up to be notified at launch.">
+
+  <style>
+    /* ── Pixel fonts ── */
+    @font-face {
+      font-family: 'PixelTitle';
+      src: url('fonts/title Pixel Font.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'PixelUI';
+      src: url('fonts/DePixelKlein.otf') format('opentype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'PixelUI';
+      src: url('fonts/DePixelHalbfett.otf') format('opentype');
+      font-weight: bold;
+      font-style: normal;
+    }
+    /* Legible pixel font for body/paragraph text */
+    @font-face {
+      font-family: 'PixelBody';
+      src: url('fonts/Extra Legible Pixel -v1.1.0.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    /* ── Design tokens (Avocado dark) ── */
+    :root {
+      --bg:         #13150F;
+      --surface:    #1C2016;
+      --surface-2:  #252B1D;
+      --border:     #303A24;
+      --accent:     #8CB254;
+      --accent-dim: rgba(140, 178, 84, 0.14);
+      --text:       #E6E6CE;
+      --text-dim:   #86906A;
+      --shadow:     #070906;
+
+      /* Urgency colours */
+      --red:    #D94740;
+      --orange: #EB8C4D;
+      --yellow: #E0BF59;
+      --green:  #73B380;
+      --sage:   #8CAE99;
+
+      --step: 6px;
+      --font-pixel-title: 'PixelTitle', 'Courier New', monospace;
+      --font-pixel-ui:    'PixelUI',    'Courier New', monospace;
+      --font-pixel-body:  'PixelBody',  'Courier New', monospace;
+    }
+
+    /* ── Reset ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-pixel-body);
+      line-height: 1.65;
+      overflow-x: hidden;
+    }
+
+    a { color: inherit; }
+    img { display: block; }
+
+    /* ── Pixel utilities ── */
+    .px-label {
+      font-family: var(--font-pixel-ui);
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    /* Pixel divider */
+    .px-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 0 auto;
+      max-width: 960px;
+      padding: 80px 24px 0;
+    }
+    .px-divider::before,
+    .px-divider::after {
+      content: '';
+      flex: 1;
+      height: 2px;
+      background: repeating-linear-gradient(
+        90deg,
+        var(--border) 0px,
+        var(--border) 6px,
+        transparent 6px,
+        transparent 12px
+      );
+    }
+    .px-divider-dots {
+      display: flex;
+      gap: 6px;
+    }
+    .px-divider-dots span {
+      display: block;
+      width: 6px;
+      height: 6px;
+      background: var(--border);
+    }
+    .px-divider-dots span:nth-child(2) { background: var(--accent); }
+
+    /* ── Hero ── */
+    .hero {
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 100px 24px 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 32px 32px;
+      opacity: 0.35;
+      pointer-events: none;
+    }
+
+    .hero-vignette {
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 65% 65% at 50% 50%, transparent 20%, var(--bg) 100%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      max-width: 580px;
+    }
+
+    .hero-logo-wrap { margin-bottom: 32px; }
+    .hero-logo {
+      width: 108px;
+      height: 108px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      filter: drop-shadow(4px 4px 0 var(--shadow));
+      margin: 0 auto;
+    }
+
+    .hero-eyebrow { margin-bottom: 16px; }
+
+    .hero-title {
+      font-family: var(--font-pixel-title);
+      font-size: clamp(72px, 16vw, 110px);
+      color: var(--text);
+      line-height: 1;
+      letter-spacing: 0.04em;
+      margin-bottom: 24px;
+      text-shadow: 5px 5px 0 var(--shadow);
+    }
+
+    .hero-tagline {
+      font-family: var(--font-pixel-body);
+      font-size: clamp(14px, 2.2vw, 17px);
+      color: var(--text-dim);
+      max-width: 400px;
+      margin: 0 auto 52px;
+      line-height: 1.7;
+    }
+
+    /* CTA button */
+    .cta-wrap {
+      display: inline-block;
+      filter: drop-shadow(5px 5px 0 var(--shadow));
+      transition: filter 0.08s ease, transform 0.08s ease;
+    }
+    .cta-wrap:hover {
+      filter: drop-shadow(7px 7px 0 var(--shadow));
+      transform: translate(-1px, -1px);
+    }
+    .cta-wrap:active {
+      filter: drop-shadow(2px 2px 0 var(--shadow));
+      transform: translate(3px, 3px);
+    }
+
+    .cta-primary {
+      display: inline-block;
+      padding: 15px 40px;
+      background: var(--accent);
+      color: #0E1009;
+      font-family: var(--font-pixel-ui);
+      font-weight: bold;
+      font-size: 13px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      text-decoration: none;
+      clip-path: polygon(
+        var(--step) 0%, calc(100% - var(--step)) 0%,
+        100% var(--step), 100% calc(100% - var(--step)),
+        calc(100% - var(--step)) 100%, var(--step) 100%,
+        0% calc(100% - var(--step)), 0% var(--step)
+      );
+      transition: background 0.1s;
+    }
+    .cta-primary:hover { background: #9CC860; }
+
+    .hero-platform {
+      margin-top: 18px;
+      font-family: var(--font-pixel-ui);
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+    }
+
+    /* Scroll indicator */
+    .hero-scroll {
+      position: absolute;
+      bottom: 32px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      opacity: 0.4;
+    }
+    .hero-scroll span {
+      display: block;
+      width: 6px;
+      height: 6px;
+      background: var(--text-dim);
+      animation: scrolldot 1.4s infinite;
+    }
+    .hero-scroll span:nth-child(2) { animation-delay: 0.2s; }
+    .hero-scroll span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes scrolldot {
+      0%, 100% { opacity: 0.2; transform: translateY(0); }
+      50%       { opacity: 1;   transform: translateY(3px); }
+    }
+
+    /* ── Shared section wrapper ── */
+    .section {
+      max-width: 960px;
+      margin: 80px auto 0;
+      padding: 0 24px;
+    }
+
+    .section-header { margin-bottom: 40px; }
+    .section-header h2 {
+      font-family: var(--font-pixel-title);
+      font-size: clamp(26px, 4vw, 38px);
+      color: var(--text);
+      line-height: 1.15;
+      margin-top: 12px;
+      text-shadow: 3px 3px 0 var(--shadow);
+    }
+    .section-header p {
+      font-family: var(--font-pixel-body);
+      margin-top: 14px;
+      color: var(--text-dim);
+      font-size: 15px;
+      max-width: 500px;
+      line-height: 1.7;
+    }
+
+    /* ── Features ── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-left: 4px solid var(--accent);
+      padding: 28px 22px;
+      box-shadow: 4px 4px 0 var(--shadow);
+      transition: transform 0.12s, box-shadow 0.12s;
+    }
+    .feature-card:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 6px 6px 0 var(--shadow);
+    }
+
+    .feature-icon {
+      font-size: 28px;
+      margin-bottom: 14px;
+      display: block;
+      line-height: 1;
+    }
+    .feature-title {
+      font-family: var(--font-pixel-title);
+      font-size: 18px;
+      color: var(--text);
+      margin-bottom: 10px;
+      text-shadow: 2px 2px 0 var(--shadow);
+    }
+    .feature-desc {
+      font-family: var(--font-pixel-body);
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.7;
+    }
+
+    /* Wide notification card */
+    .feature-card.wide {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 28px;
+      align-items: center;
+    }
+
+    .notif-tags {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .notif-tag {
+      font-family: var(--font-pixel-ui);
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      padding: 6px 12px;
+      background: var(--accent-dim);
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    /* Themes footnote */
+    .themes-footnote {
+      margin-top: 20px;
+      font-family: var(--font-pixel-ui);
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+      text-align: center;
+    }
+    .themes-footnote span {
+      display: inline-flex;
+      gap: 4px;
+      align-items: center;
+    }
+    .theme-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+    }
+
+    /* ── Screenshots ── */
+    .screens-row {
+      display: flex;
+      gap: 28px;
+      align-items: flex-end;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .screen-unit {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* phone-wrap carries the drop-shadow; clip-path on .phone clips the shape.
+       They must be on separate elements — filter+clip-path on the same element
+       causes the shadow to be clipped away. */
+    .phone-wrap {
+      filter: drop-shadow(6px 6px 0 var(--shadow));
+      flex-shrink: 0;
+    }
+    .screen-unit.featured .phone-wrap { transform: scale(1.06); }
+
+    .phone {
+      width: 180px;
+      background: #0C0E0A;
+      padding: 14px;
+      clip-path: polygon(
+        14px 0%, calc(100% - 14px) 0%,
+        100% 14px, 100% calc(100% - 14px),
+        calc(100% - 14px) 100%, 14px 100%,
+        0% calc(100% - 14px), 0% 14px
+      );
+    }
+
+    .phone-island {
+      width: 52px;
+      height: 10px;
+      background: #252820;
+      border-radius: 2px;
+      margin: 0 auto 12px;
+    }
+
+    .phone-screen {
+      background: var(--surface);
+      height: 320px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .phone-indicator {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 36px;
+      height: 4px;
+      background: var(--text);
+      border-radius: 2px;
+      opacity: 0.3;
+    }
+
+    /* Screen 3: Notifications (CSS-drawn, no screenshot available) */
+    .screen-notif {
+      padding: 12px 10px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+    }
+    .screen-notif-banner {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 10px;
+      margin-bottom: 12px;
+    }
+    .banner-app {
+      font-family: var(--font-pixel-ui);
+      font-size: 8px;
+      color: var(--accent);
+      letter-spacing: 0.1em;
+      margin-bottom: 3px;
+    }
+    .banner-title {
+      font-family: var(--font-pixel-ui);
+      font-size: 9px;
+      font-weight: bold;
+      color: var(--text);
+      margin-bottom: 2px;
+    }
+    .banner-body {
+      font-family: var(--font-pixel-ui);
+      font-size: 8px;
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+    .notif-section-label {
+      font-family: var(--font-pixel-ui);
+      font-size: 8px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin: 8px 0 4px;
+      padding-left: 2px;
+    }
+    .notif-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 2px;
+      border-bottom: 1px solid var(--border);
+    }
+    .notif-row-label {
+      font-family: var(--font-pixel-ui);
+      font-size: 9px;
+      color: var(--text);
+    }
+    .notif-row-val {
+      font-family: var(--font-pixel-ui);
+      font-size: 8px;
+      color: var(--accent);
+    }
+    .notif-toggle {
+      width: 24px;
+      height: 12px;
+      background: var(--accent);
+      border-radius: 6px;
+      position: relative;
+    }
+    .notif-toggle::after {
+      content: '';
+      position: absolute;
+      right: 2px;
+      top: 2px;
+      width: 8px;
+      height: 8px;
+      background: #0E1009;
+      border-radius: 50%;
+    }
+
+    .screen-caption {
+      font-family: var(--font-pixel-ui);
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+      text-align: center;
+    }
+
+    /* ── Bottom CTA strip ── */
+    .cta-strip {
+      background: var(--surface);
+      border-top: 2px solid var(--border);
+      border-bottom: 2px solid var(--border);
+      padding: 72px 24px;
+      text-align: center;
+      margin-top: 80px;
+    }
+    .cta-strip h2 {
+      font-family: var(--font-pixel-title);
+      font-size: clamp(24px, 4vw, 36px);
+      color: var(--text);
+      margin-bottom: 16px;
+      text-shadow: 3px 3px 0 var(--shadow);
+    }
+    .cta-strip p {
+      font-family: var(--font-pixel-body);
+      color: var(--text-dim);
+      font-size: 15px;
+      margin-bottom: 40px;
+      line-height: 1.7;
+    }
+
+    /* ── Footer ── */
+    footer {
+      padding: 32px 24px 40px;
+      text-align: center;
+      border-top: 1px solid var(--border);
+    }
+    footer p {
+      font-family: var(--font-pixel-ui);
+      font-size: 10px;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      line-height: 2;
+    }
+    .footer-maker {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      margin-top: 28px;
+      padding-top: 28px;
+      border-top: 1px solid var(--border);
+    }
+    .footer-maker-label {
+      font-family: var(--font-pixel-ui);
+      font-size: 9px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .footer-maker-logo {
+      width: 88px;
+      opacity: 0.55;
+      image-rendering: pixelated;
+      transition: opacity 0.2s;
+    }
+    .footer-maker-logo:hover { opacity: 0.85; }
+
+    /* Screenshot phones — image fills the bezel edge-to-edge */
+    .phone-screenshot { padding: 0; }
+    .phone-screenshot img { width: 100%; display: block; }
+
+    /* ── Mailchimp signup form ── */
+    .mc-form-wrap {
+      display: inline-block;
+      filter: drop-shadow(5px 5px 0 var(--shadow));
+      transition: filter 0.08s ease, transform 0.08s ease;
+    }
+    .mc-form-wrap:focus-within {
+      filter: drop-shadow(7px 7px 0 var(--shadow));
+      transform: translate(-1px, -1px);
+    }
+    .mc-form {
+      display: flex;
+      gap: 0;
+    }
+    .mc-email-input {
+      flex: 1;
+      padding: 15px 18px;
+      background: var(--surface);
+      border: 2px solid var(--border);
+      border-right: none;
+      color: var(--text);
+      font-family: var(--font-pixel-ui);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      outline: none;
+      min-width: 0;
+      clip-path: polygon(
+        6px 0%, 100% 0%,
+        100% 100%, 6px 100%,
+        0% calc(100% - 6px), 0% 6px
+      );
+      transition: border-color 0.1s;
+    }
+    .mc-email-input::placeholder { color: var(--text-dim); }
+    .mc-email-input:focus { border-color: var(--accent); }
+    .mc-submit-btn {
+      padding: 15px 22px;
+      background: var(--accent);
+      color: #0E1009;
+      font-family: var(--font-pixel-ui);
+      font-weight: bold;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      border: none;
+      cursor: pointer;
+      white-space: nowrap;
+      clip-path: polygon(
+        0% 0%, calc(100% - 6px) 0%,
+        100% 6px, 100% calc(100% - 6px),
+        calc(100% - 6px) 100%, 0% 100%
+      );
+      transition: background 0.1s;
+    }
+    .mc-submit-btn:hover { background: #9CC860; }
+    .mc-badge {
+      margin-top: 10px;
+      font-family: var(--font-pixel-ui);
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+      opacity: 0.5;
+    }
+    .mc-badge a { color: var(--text-dim); text-decoration: none; }
+
+    /* ── Responsive ── */
+    @media (max-width: 640px) {
+      .features-grid          { grid-template-columns: 1fr; }
+      .feature-card.wide      { grid-template-columns: 1fr; }
+      .notif-tags             { flex-direction: row; flex-wrap: wrap; }
+      .screens-row            { gap: 16px; }
+      .screen-unit.featured .phone { transform: none; }
+      .phone                  { width: 150px; }
+      .phone-screen           { height: 268px; }
+      .mc-form-wrap           { width: 100%; max-width: 360px; }
+      .mc-form                { width: 100%; }
+      .mc-email-input         { font-size: 16px; /* prevent iOS zoom */ }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ════════════════════════ HERO -->
+  <section class="hero">
+    <div class="hero-vignette"></div>
+
+    <div class="hero-content">
+      <div class="hero-logo-wrap">
+        <img
+          src="Logo Main 2.6.26.png"
+          alt="Ripe — pixel-art grocery basket"
+          class="hero-logo"
+        >
+      </div>
+
+      <p class="hero-eyebrow px-label">iOS · Coming Soon</p>
+
+      <h1 class="hero-title">RIPE</h1>
+
+      <p class="hero-tagline">
+        Your grocery list. Your pantry. Nothing wasted.<br>
+        Be the first to know when we launch.
+      </p>
+
+      <div class="mc-form-wrap">
+        <form
+          action="https://2240.us4.list-manage.com/subscribe/post?u=0ad2dc110b607b7f27fe0ddf1&amp;id=d23ccdf0e0&amp;f_id=009d6aeaf0"
+          method="post"
+          id="mc-embedded-subscribe-form-hero"
+          name="mc-embedded-subscribe-form"
+          class="mc-form"
+          target="_self"
+          novalidate
+        >
+          <input
+            type="email"
+            value=""
+            name="EMAIL"
+            class="mc-email-input"
+            id="mce-EMAIL-hero"
+            placeholder="your@email.com"
+            required
+            aria-label="Email address"
+          >
+          <div style="position:absolute;left:-5000px;" aria-hidden="true">
+            <input type="text" name="b_0ad2dc110b607b7f27fe0ddf1_d23ccdf0e0" tabindex="-1" value="">
+          </div>
+          <input type="submit" value="Notify me" name="subscribe" class="mc-submit-btn">
+        </form>
+      </div>
+
+      <p class="hero-platform">No spam &nbsp;·&nbsp; Unsubscribe any time</p>
+    </div>
+
+    <div class="hero-scroll" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </div>
+  </section>
+
+  <!-- ════════════════════════ FEATURES -->
+  <div class="px-divider" aria-hidden="true">
+    <div class="px-divider-dots">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="px-label">What's inside</span>
+      <h2>Grocery list meets<br>pantry tracker.</h2>
+      <p>Ripe connects the dots between what you buy and what you have — so nothing gets forgotten in the back of the fridge.</p>
+    </div>
+
+    <div class="features-grid">
+
+      <div class="feature-card">
+        <span class="feature-icon">🛒</span>
+        <div class="feature-title">Shopping List</div>
+        <p class="feature-desc">Add items with quantities, units, and categories. Mark purchased — and watch them move straight to your pantry.</p>
+      </div>
+
+      <div class="feature-card">
+        <span class="feature-icon">🥬</span>
+        <div class="feature-title">Pantry Tracker</div>
+        <p class="feature-desc">Everything you buy lands here. Set expiry dates and see your fridge at a glance — colour-coded from fresh to expired.</p>
+      </div>
+
+      <!-- Notifications — full-width featured card -->
+      <div class="feature-card wide">
+        <div>
+          <span class="feature-icon">🔔</span>
+          <div class="feature-title">Expiry Alerts</div>
+          <p class="feature-desc">
+            Ripe watches your pantry so you don't have to. Get notified before food goes bad —
+            choose how many days in advance, what time of day, and whether you want one
+            daily digest or individual alerts per item.
+          </p>
+        </div>
+        <div class="notif-tags">
+          <span class="notif-tag">Daily digest or per-item</span>
+          <span class="notif-tag">1, 2, or 3 days ahead</span>
+          <span class="notif-tag">Custom notification hour</span>
+          <span class="notif-tag">Alerts for expired items too</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Themes: brief mention only -->
+    <p class="themes-footnote">
+      Also: 13 fruit-themed colour palettes — &nbsp;
+      <span>
+        <span class="theme-dot" style="background:#4E7336"></span>
+        <span class="theme-dot" style="background:#D44E6A"></span>
+        <span class="theme-dot" style="background:#C8A020"></span>
+        <span class="theme-dot" style="background:#C04030"></span>
+        <span class="theme-dot" style="background:#2A6E5A"></span>
+        <span class="theme-dot" style="background:#D4703A"></span>
+        <span class="theme-dot" style="background:#A03060"></span>
+      </span>
+      &nbsp;— to make the app yours.
+    </p>
+  </div>
+
+  <!-- ════════════════════════ SCREENSHOTS -->
+  <div class="px-divider" aria-hidden="true">
+    <div class="px-divider-dots">
+      <span></span><span></span><span></span><span></span><span></span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-header">
+      <span class="px-label">A peek inside</span>
+      <h2>Pixel-art design,<br>zero clutter.</h2>
+    </div>
+
+    <div class="screens-row">
+
+      <!-- Phone 1: Shopping List (real screenshot) -->
+      <div class="screen-unit">
+        <div class="phone-wrap">
+          <div class="phone phone-screenshot">
+            <img
+              src="screenshot-list.png"
+              alt="Ripe shopping list — 11 items including Chicken Wings, Granola, and Falafel"
+            >
+          </div>
+        </div>
+        <span class="screen-caption">Shopping List</span>
+      </div>
+
+      <!-- Phone 2: Pantry (featured, real screenshot) -->
+      <div class="screen-unit featured">
+        <div class="phone-wrap">
+          <div class="phone phone-screenshot">
+            <img
+              src="screenshot-pantry.png"
+              alt="Ripe pantry view — colour-coded expiry tracking from expired to shelf stable"
+            >
+          </div>
+        </div>
+        <span class="screen-caption">Pantry &amp; Expiry Tracking</span>
+      </div>
+
+      <!-- Phone 3: Notifications -->
+      <div class="screen-unit">
+        <div class="phone-wrap">
+        <div class="phone">
+          <div class="phone-island"></div>
+          <div class="phone-screen">
+            <div class="screen-notif">
+              <!-- Mock iOS notification banner -->
+              <div class="screen-notif-banner">
+                <div class="banner-app">RIPE</div>
+                <div class="banner-title">Greek Yogurt expires today</div>
+                <div class="banner-body">Don't forget to use it up before it goes bad.</div>
+              </div>
+              <div class="notif-section-label">Alert Settings</div>
+              <div class="notif-row">
+                <span class="notif-row-label">Expiry Alerts</span>
+                <div class="notif-toggle"></div>
+              </div>
+              <div class="notif-row">
+                <span class="notif-row-label">Notify at</span>
+                <span class="notif-row-val">9:00 AM</span>
+              </div>
+              <div class="notif-row">
+                <span class="notif-row-label">Days ahead</span>
+                <span class="notif-row-val">1 &amp; 3</span>
+              </div>
+              <div class="notif-row">
+                <span class="notif-row-label">On expiry day</span>
+                <div class="notif-toggle"></div>
+              </div>
+              <div class="notif-row">
+                <span class="notif-row-label">Mode</span>
+                <span class="notif-row-val">Daily digest</span>
+              </div>
+            </div>
+            <div class="phone-indicator"></div>
+          </div>
+        </div>
+        </div>
+        <span class="screen-caption">Expiry Alerts</span>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════ BOTTOM CTA -->
+  <div class="cta-strip">
+    <h2>Be the first to know.</h2>
+    <p>Ripe is almost ready. Drop your email and we'll reach out when it launches.</p>
+    <div class="mc-form-wrap">
+      <form
+        action="https://2240.us4.list-manage.com/subscribe/post?u=0ad2dc110b607b7f27fe0ddf1&amp;id=d23ccdf0e0&amp;f_id=009d6aeaf0"
+        method="post"
+        id="mc-embedded-subscribe-form-footer"
+        name="mc-embedded-subscribe-form"
+        class="mc-form"
+        target="_self"
+        novalidate
+      >
+        <input
+          type="email"
+          value=""
+          name="EMAIL"
+          class="mc-email-input"
+          id="mce-EMAIL-footer"
+          placeholder="your@email.com"
+          required
+          aria-label="Email address"
+        >
+        <div style="position:absolute;left:-5000px;" aria-hidden="true">
+          <input type="text" name="b_0ad2dc110b607b7f27fe0ddf1_d23ccdf0e0" tabindex="-1" value="">
+        </div>
+        <input type="submit" value="Notify me" name="subscribe" class="mc-submit-btn">
+      </form>
+    </div>
+  </div>
+
+  <!-- ════════════════════════ FOOTER -->
+  <footer>
+    <p>RIPE &nbsp;·&nbsp; © 2026</p>
+    <p style="margin-top:6px">iOS 17+ &nbsp;·&nbsp; LAUNCHING SOON</p>
+    <div class="footer-maker">
+      <span class="footer-maker-label">a product by</span>
+      <img src="logo-2240.png" alt="22 40" class="footer-maker-logo">
+    </div>
+  </footer>
+
+</body>
+</html>
