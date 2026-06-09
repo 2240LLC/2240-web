@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Room Impulse Response &amp; Reverb Simulation — 2240</title>
+  <style>
+    [data-theme="dark"] {
+      --bg:           #0a0a0a;
+      --title:        #f2f2f2;
+      --body:         #b0b0b0;
+      --label:        #555;
+      --meta:         #666;
+      --brand:        #6dbf82;
+      --desc-border:  #2a2a2a;
+      --pill-border:  #2e2e2e;
+      --pill-color:   #777;
+      --video-bg:     #141414;
+      --video-border: #252525;
+      --tog-border:   #333;
+      --tog-color:    #777;
+      --foot-border:  #1e1e1e;
+      --foot-color:   #333;
+    }
+    [data-theme="light"] {
+      --bg:           #f8f7f4;
+      --title:        #1a1a1a;
+      --body:         #666;
+      --label:        #bbb;
+      --meta:         #aaa;
+      --brand:        #2d6e45;
+      --desc-border:  #e0ddd6;
+      --pill-border:  #ddd;
+      --pill-color:   #aaa;
+      --video-bg:     #e8e6e0;
+      --video-border: #ddd;
+      --tog-border:   #ddd;
+      --tog-color:    #aaa;
+      --foot-border:  #e8e5de;
+      --foot-color:   #ccc;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--title);
+      font-family: 'Courier New', 'Menlo', monospace;
+      transition: background 0.2s, color 0.2s;
+      min-height: 100svh;
+    }
+
+    .wrap { max-width: 680px; margin: 0 auto; padding: 48px 32px 64px; }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 40px;
+    }
+    .breadcrumb { font-size: 11px; color: var(--meta); letter-spacing: 0.08em; }
+    .brand { color: var(--brand); }
+
+    .toggle-btn {
+      background: none;
+      border: 1px solid var(--tog-border);
+      color: var(--tog-color);
+      font-family: inherit;
+      font-size: 13px;
+      padding: 4px 10px;
+      cursor: pointer;
+      transition: border-color 0.1s, color 0.1s;
+    }
+    .toggle-btn:hover { border-color: var(--meta); color: var(--body); }
+
+    .eyebrow {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--label);
+      margin-bottom: 10px;
+    }
+    h1 {
+      font-size: 22px;
+      font-weight: normal;
+      color: var(--title);
+      line-height: 1.3;
+      margin-bottom: 6px;
+    }
+    .meta-line { font-size: 12px; color: var(--meta); margin-bottom: 36px; }
+
+    video {
+      width: 100%;
+      display: block;
+      background: var(--video-bg);
+      border: 1px solid var(--video-border);
+      margin-bottom: 36px;
+    }
+
+    .section-label {
+      font-size: 10px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--label);
+      margin-bottom: 10px;
+    }
+    .desc {
+      font-size: 13px;
+      line-height: 1.8;
+      color: var(--body);
+      border-left: 2px solid var(--desc-border);
+      padding-left: 16px;
+      margin-bottom: 32px;
+    }
+
+    .pills { display: flex; gap: 8px; flex-wrap: wrap; }
+    .pill {
+      font-size: 11px;
+      padding: 4px 11px;
+      border: 1px solid var(--pill-border);
+      color: var(--pill-color);
+    }
+
+    footer {
+      margin-top: 52px;
+      padding-top: 16px;
+      border-top: 1px solid var(--foot-border);
+      font-size: 10px;
+      color: var(--foot-color);
+      letter-spacing: 0.1em;
+    }
+
+    @media (max-width: 480px) {
+      .wrap { padding: 32px 20px 48px; }
+      h1 { font-size: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <span class="breadcrumb"><span class="brand">2240</span> / projects</span>
+      <button class="toggle-btn" id="theme-toggle" aria-label="Toggle light/dark theme">◑</button>
+    </div>
+
+    <div class="eyebrow">Undergraduate Physics Capstone</div>
+    <h1>Room Impulse Response<br>&amp; Reverb Simulation</h1>
+    <p class="meta-line">MATLAB · Digital Signal Processing</p>
+
+    <video src="matlab-reverb.mp4" controls playsinline></video>
+
+    <div class="section-label">About</div>
+    <p class="desc">Modeled a room's acoustic impulse response and applied it via convolution to produce a realistic reverb effect in MATLAB.</p>
+
+    <div class="section-label">Tech</div>
+    <div class="pills">
+      <span class="pill">MATLAB</span>
+      <span class="pill">Digital Signal Processing</span>
+      <span class="pill">Convolution</span>
+      <span class="pill">Acoustic Modeling</span>
+    </div>
+
+    <footer>© 2026 2240</footer>
+  </div>
+
+  <script>
+    (function () {
+      var stored    = localStorage.getItem('theme');
+      var preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', stored || preferred);
+
+      document.getElementById('theme-toggle').addEventListener('click', function () {
+        var current = document.documentElement.getAttribute('data-theme');
+        var next    = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-theme', next);
+        localStorage.setItem('theme', next);
+      });
+    })();
+  </script>
+</body>
+</html>
