@@ -53,7 +53,7 @@ function extractWaveform() {
   }
 
   // Normalise so tallest bar = 1
-  const max = Math.max(...bars, 0.001);
+  const max = bars.reduce((a, b) => Math.max(a, b), 0.001);
   bars = bars.map(b => b / max);
 }
 
@@ -116,10 +116,10 @@ function tick() {
 }
 
 // ── Playback controls ─────────────────────────────────────────────────────────
-function play() {
+async function play() {
   if (!audioBuffer) return;
   const ctx = getCtx();
-  if (ctx.state === 'suspended') ctx.resume();
+  if (ctx.state === 'suspended') await ctx.resume();
 
   sourceNode = ctx.createBufferSource();
   sourceNode.buffer = audioBuffer;
