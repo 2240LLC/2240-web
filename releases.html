@@ -114,6 +114,10 @@
 
     .release.locked { animation-play-state: paused; }
 
+    @media (prefers-reduced-motion: reduce) {
+      .release { animation: none; }
+    }
+
     .foot-releases {
       position: fixed; bottom: 24px; left: 32px; z-index: 10;
       font-size: 8px; letter-spacing: 0.2em;
@@ -124,39 +128,39 @@
 </head>
 <body>
   <a class="wordmark-fixed" href="/" onclick="reset()">2240</a>
-  <button class="reset-btn" id="reset-btn" onclick="reset()">← all</button>
+  <button type="button" class="reset-btn" id="reset-btn" onclick="reset()">← all</button>
 
   <div class="stage">
-    <div class="release" id="rel-tonsure"
-         onmouseenter="preview('tonsure')" onmouseleave="unpreview()"
-         onclick="lock('tonsure', this)">
+    <div class="release" id="rel-tonsure" role="button" tabindex="0"
+         onmouseenter="preview('tonsure')" onmouseleave="unpreview()" onfocus="preview('tonsure')" onblur="unpreview()"
+         onclick="lock('tonsure', this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();lock('tonsure',this);}">
       <div class="release-tag">New · Single · 2026</div>
       <div class="release-title">You Are The Man<span class="new-dot"></span></div>
       <div class="release-sub">Tonsure</div>
       <a href="/" class="release-listen" onclick="event.stopPropagation()">Listen</a>
     </div>
 
-    <div class="release" id="rel-washboard"
-         onmouseenter="preview('washboard')" onmouseleave="unpreview()"
-         onclick="lock('washboard', this)">
+    <div class="release" id="rel-washboard" role="button" tabindex="0"
+         onmouseenter="preview('washboard')" onmouseleave="unpreview()" onfocus="preview('washboard')" onblur="unpreview()"
+         onclick="lock('washboard', this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();lock('washboard',this);}">
       <div class="release-tag">Single · 2026</div>
       <div class="release-title">Washboard</div>
       <div class="release-sub">Toby Brown</div>
       <a href="#" class="release-listen" onclick="event.stopPropagation()">Listen</a>
     </div>
 
-    <div class="release" id="rel-patient"
-         onmouseenter="preview('patient')" onmouseleave="unpreview()"
-         onclick="lock('patient', this)">
+    <div class="release" id="rel-patient" role="button" tabindex="0"
+         onmouseenter="preview('patient')" onmouseleave="unpreview()" onfocus="preview('patient')" onblur="unpreview()"
+         onclick="lock('patient', this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();lock('patient',this);}">
       <div class="release-tag">LP · 2022</div>
       <div class="release-title">The Patient</div>
       <div class="release-sub">Toby Brown</div>
       <a href="#" class="release-listen" onclick="event.stopPropagation()">Listen</a>
     </div>
 
-    <div class="release" id="rel-statues"
-         onmouseenter="preview('statues')" onmouseleave="unpreview()"
-         onclick="lock('statues', this)">
+    <div class="release" id="rel-statues" role="button" tabindex="0"
+         onmouseenter="preview('statues')" onmouseleave="unpreview()" onfocus="preview('statues')" onblur="unpreview()"
+         onclick="lock('statues', this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();lock('statues',this);}">
       <div class="release-tag">Dual Single · 2021</div>
       <div class="release-title">Is It Even Easier?</div>
       <div class="release-sub">Toby Brown</div>

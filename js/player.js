@@ -177,7 +177,8 @@ async function loadAudio() {
     const res = await fetch(AUDIO_FILE);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const raw = await res.arrayBuffer();
-    audioBuffer = await getCtx().decodeAudioData(raw);
+    const offCtx = new OfflineAudioContext(1, 1, 44100);
+    audioBuffer = await offCtx.decodeAudioData(raw);
     timeTot.textContent = ' / ' + fmt(audioBuffer.duration);
     extractWaveform();
     draw();
