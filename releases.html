@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="neutral">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2240 — Releases</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <style>
+    html, body { overflow: hidden; }
+
+    .wordmark-fixed {
+      position: fixed; top: 28px; left: 32px; z-index: 10;
+      font-size: 9px; letter-spacing: 0.32em; text-transform: uppercase;
+      color: var(--fg); opacity: 0.22; text-decoration: none;
+      transition: opacity 0.3s;
+    }
+    .wordmark-fixed:hover { opacity: 0.65; }
+
+    .reset-btn {
+      position: fixed; top: 28px; right: 32px; z-index: 10;
+      font-family: inherit; font-size: 8px; letter-spacing: 0.22em;
+      text-transform: uppercase; color: var(--meta); background: none;
+      border: none; cursor: pointer; padding: 0;
+      opacity: 0; pointer-events: none;
+      transition: opacity 0.4s, color 0.4s;
+    }
+    .reset-btn.visible { opacity: 1; pointer-events: all; }
+    .reset-btn:hover   { color: var(--fg); }
+
+    .stage { position: fixed; inset: 0; z-index: 1; }
+
+    .release {
+      position: absolute; cursor: pointer; user-select: none;
+      transition: opacity 0.5s;
+    }
+
+    /* dim inactive releases when one is locked */
+    body.has-lock .release:not(.locked) { opacity: 0.12; }
+
+    .release-tag {
+      font-size: 7px; letter-spacing: 0.25em; text-transform: uppercase;
+      color: var(--meta); margin-bottom: 7px; transition: color 0.6s;
+    }
+
+    .release-title {
+      font-size: clamp(18px, 2.8vw, 36px); font-weight: bold;
+      letter-spacing: -0.02em; line-height: 1;
+      color: rgba(255,255,255,0.18);
+      transition: color 0.6s; margin-bottom: 6px;
+    }
+    [data-mode="statues"] .release-title { color: rgba(40,36,48,0.2); }
+    .release.locked .release-title { color: var(--fg); }
+
+    .release-sub {
+      font-size: 9px; letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.08); transition: color 0.6s;
+    }
+    [data-mode="statues"] .release-sub { color: rgba(40,36,48,0.15); }
+    .release.locked .release-sub { color: var(--meta); }
+
+    .release-listen {
+      display: block; font-size: 8px; letter-spacing: 0.2em;
+      text-transform: uppercase; color: var(--meta); text-decoration: none;
+      margin-top: 10px; opacity: 0; transform: translateY(4px);
+      transition: opacity 0.4s 0.1s, transform 0.4s 0.1s;
+      pointer-events: none;
+    }
+    .release.locked .release-listen { opacity: 1; transform: translateY(0); pointer-events: all; }
+    .release-listen::after { content: ' →'; }
+
+    .new-dot {
+      display: inline-block; width: 5px; height: 5px; border-radius: 50%;
+      background: rgba(255,255,255,0.25); margin-left: 8px;
+      vertical-align: middle; position: relative; top: -2px;
+      transition: background 0.6s, box-shadow 0.6s;
+    }
+    [data-mode="tonsure"] .new-dot {
+      background: rgba(239,239,239,0.8);
+      box-shadow: 0 0 8px rgba(239,239,239,0.3);
+    }
+
+    /* drift animations — four independent paths */
+    @keyframes drift-a {
+      0%   { transform: translate(0,0); }
+      25%  { transform: translate(6px,-9px); }
+      50%  { transform: translate(-4px,-14px); }
+      75%  { transform: translate(-8px,-5px); }
+      100% { transform: translate(0,0); }
+    }
+    @keyframes drift-b {
+      0%   { transform: translate(0,0); }
+      33%  { transform: translate(-10px,7px); }
+      66%  { transform: translate(7px,12px); }
+      100% { transform: translate(0,0); }
+    }
+    @keyframes drift-c {
+      0%   { transform: translate(0,0); }
+      30%  { transform: translate(8px,-6px); }
+      60%  { transform: translate(3px,10px); }
+      100% { transform: translate(0,0); }
+    }
+    @keyframes drift-d {
+      0%   { transform: translate(0,0); }
+      40%  { transform: translate(-6px,-10px); }
+      80%  { transform: translate(5px,-4px); }
+      100% { transform: translate(0,0); }
+    }
+
+    #rel-tonsure   { left: 6%;  top: 8%;  animation: drift-a 14s ease-in-out infinite; }
+    #rel-washboard { left: 54%; top: 18%; animation: drift-b 18s ease-in-out infinite; }
+    #rel-patient   { left: 24%; top: 30%; animation: drift-c 22s ease-in-out infinite; }
+    #rel-statues   { left: 62%; top: 6%;  animation: drift-d 16s ease-in-out infinite; }
+
+    .release.locked { animation-play-state: paused; }
+
+    .foot-releases {
+      position: fixed; bottom: 24px; left: 32px; z-index: 10;
+      font-size: 8px; letter-spacing: 0.2em;
+      color: rgba(255,255,255,0.07); transition: color 0.6s;
+    }
+    [data-mode="statues"] .foot-releases { color: rgba(40,36,48,0.15); }
+  </style>
+</head>
+<body>
+  <a class="wordmark-fixed" href="/" onclick="reset()">2240</a>
+  <button class="reset-btn" id="reset-btn" onclick="reset()">← all</button>
+
+  <div class="stage">
+    <div class="release" id="rel-tonsure"
+         onmouseenter="preview('tonsure')" onmouseleave="unpreview()"
+         onclick="lock('tonsure', this)">
+      <div class="release-tag">New · Single · 2026</div>
+      <div class="release-title">You Are The Man<span class="new-dot"></span></div>
+      <div class="release-sub">Tonsure</div>
+      <a href="/" class="release-listen">Listen</a>
+    </div>
+
+    <div class="release" id="rel-washboard"
+         onmouseenter="preview('washboard')" onmouseleave="unpreview()"
+         onclick="lock('washboard', this)">
+      <div class="release-tag">Single · 2026</div>
+      <div class="release-title">Washboard</div>
+      <div class="release-sub">Toby Brown</div>
+      <a href="#" class="release-listen">Listen</a>
+    </div>
+
+    <div class="release" id="rel-patient"
+         onmouseenter="preview('patient')" onmouseleave="unpreview()"
+         onclick="lock('patient', this)">
+      <div class="release-tag">LP · 2022</div>
+      <div class="release-title">The Patient</div>
+      <div class="release-sub">Toby Brown</div>
+      <a href="#" class="release-listen">Listen</a>
+    </div>
+
+    <div class="release" id="rel-statues"
+         onmouseenter="preview('statues')" onmouseleave="unpreview()"
+         onclick="lock('statues', this)">
+      <div class="release-tag">Dual Single · 2021</div>
+      <div class="release-title">Is It Even Easier?</div>
+      <div class="release-sub">Toby Brown</div>
+      <a href="#" class="release-listen">Listen</a>
+    </div>
+  </div>
+
+  <div class="foot-releases">© 2026 2240</div>
+
+  <script>
+    let locked = null;
+
+    function preview(m) {
+      if (!locked) document.documentElement.setAttribute('data-mode', m);
+    }
+    function unpreview() {
+      if (!locked) document.documentElement.setAttribute('data-mode', 'neutral');
+    }
+    function lock(m, el) {
+      if (locked === m) { reset(); return; }
+      locked = m;
+      document.documentElement.setAttribute('data-mode', m);
+      document.body.classList.add('has-lock');
+      document.querySelectorAll('.release').forEach(r => r.classList.remove('locked'));
+      el.classList.add('locked');
+      document.getElementById('reset-btn').classList.add('visible');
+    }
+    function reset() {
+      locked = null;
+      document.documentElement.setAttribute('data-mode', 'neutral');
+      document.body.classList.remove('has-lock');
+      document.querySelectorAll('.release').forEach(r => r.classList.remove('locked'));
+      document.getElementById('reset-btn').classList.remove('visible');
+    }
+  </script>
+</body>
+</html>
