@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="tonsure">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2240</title>
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/themes.css">
+  <style>
+    body { display: flex; flex-direction: column; }
+
+    .feature {
+      flex: 1; display: flex; flex-direction: column;
+      justify-content: center; padding: 0 36px;
+      position: relative; z-index: 10;
+    }
+    .feature-eyebrow {
+      font-size: 8px; letter-spacing: 0.3em; text-transform: uppercase;
+      color: var(--meta); margin-bottom: 16px;
+    }
+    .feature-title {
+      font-size: clamp(36px, 6vw, 80px); font-weight: bold;
+      letter-spacing: -0.03em; line-height: 0.95;
+      color: var(--fg); margin-bottom: 16px; max-width: 700px;
+    }
+    .feature-artist {
+      font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+      color: var(--meta);
+    }
+
+    /* waveform */
+    .waveform-wrap {
+      position: relative; width: 100%; height: 140px;
+      cursor: crosshair; flex-shrink: 0;
+    }
+    #waveform { display: block; width: 100%; height: 100%; }
+
+    .playhead {
+      position: absolute; top: 0; left: 50%;
+      width: 1px; height: 100%;
+      background: rgba(239,239,239,0.55);
+      transform: translateX(-0.5px); pointer-events: none;
+    }
+    .wf-fade {
+      position: absolute; top: 0; width: 100px; height: 100%;
+      pointer-events: none; z-index: 2;
+    }
+    .wf-fade-l { left:  0; background: linear-gradient(to right, var(--bg) 0%, transparent 100%); }
+    .wf-fade-r { right: 0; background: linear-gradient(to left,  var(--bg) 0%, transparent 100%); }
+
+    /* transport */
+    .transport {
+      display: flex; align-items: center; gap: 20px;
+      padding: 14px 36px; position: relative; z-index: 10; flex-shrink: 0;
+    }
+
+    .play-btn {
+      width: 36px; height: 36px; border-radius: 50%;
+      border: 1px solid rgba(239,239,239,0.25); background: none;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: border-color 0.2s, background 0.2s;
+    }
+    .play-btn:hover { border-color: rgba(239,239,239,0.6); }
+
+    .icon-play {
+      width: 0; height: 0; border-style: solid;
+      border-width: 6px 0 6px 10px;
+      border-color: transparent transparent transparent rgba(239,239,239,0.8);
+      margin-left: 2px;
+    }
+    .icon-pause { display: none; gap: 3px; align-items: center; }
+    .icon-pause span {
+      display: block; width: 3px; height: 12px;
+      background: rgba(239,239,239,0.8); border-radius: 1px;
+    }
+    .play-btn.playing .icon-play  { display: none; }
+    .play-btn.playing .icon-pause { display: flex; }
+
+    .time-display {
+      font-size: 9px; letter-spacing: 0.1em;
+      color: var(--meta); font-variant-numeric: tabular-nums;
+    }
+    #time-current { color: var(--fg); opacity: 0.7; }
+
+    .stream-links { margin-left: auto; display: flex; gap: 18px; }
+    .stream-link {
+      font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--meta); text-decoration: none; transition: color 0.2s;
+    }
+    .stream-link:hover { color: var(--fg); }
+
+    .foot a {
+      font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--meta); text-decoration: none; transition: color 0.2s;
+    }
+    .foot a:hover { color: var(--fg); }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <a href="/" class="wordmark">2240</a>
+    <nav>
+      <a href="/" class="active">Home</a>
+      <a href="/releases.html">Releases</a>
+      <a href="/contact.html">Contact</a>
+    </nav>
+  </div>
+
+  <div class="feature">
+    <div class="feature-eyebrow">New release · Tonsure · Single · 2026</div>
+    <div class="feature-title">You Are The Man</div>
+    <div class="feature-artist">Tonsure — Ambient / New Age</div>
+  </div>
+
+  <div class="waveform-wrap" id="waveform-wrap">
+    <canvas id="waveform"
+            role="img"
+            aria-label="Audio waveform for You Are The Man by Tonsure. Click to seek.">
+    </canvas>
+    <div class="playhead"></div>
+    <div class="wf-fade wf-fade-l"></div>
+    <div class="wf-fade wf-fade-r"></div>
+  </div>
+
+  <div class="transport">
+    <button class="play-btn" id="play-btn"
+            aria-label="Play You Are The Man by Tonsure"
+            onclick="window.PLAYER && window.PLAYER.togglePlay()">
+      <div class="icon-play"></div>
+      <div class="icon-pause"><span></span><span></span></div>
+    </button>
+    <div class="time-display">
+      <span id="time-current">0:00</span><span id="time-total"> / —:——</span>
+    </div>
+    <div class="stream-links">
+      <a href="YOUR_SPOTIFY_URL"  target="_blank" rel="noopener" class="stream-link" aria-label="Listen on Spotify (opens in new tab)">Spotify</a>
+      <a href="YOUR_APPLE_URL"    target="_blank" rel="noopener" class="stream-link" aria-label="Listen on Apple Music (opens in new tab)">Apple Music</a>
+      <a href="YOUR_BANDCAMP_URL" target="_blank" rel="noopener" class="stream-link" aria-label="Listen on Bandcamp (opens in new tab)">Bandcamp</a>
+    </div>
+  </div>
+
+  <div class="foot">
+    <span class="foot-copy">© 2026 2240</span>
+    <a href="/releases.html">All releases →</a>
+  </div>
+
+  <script type="module" src="js/player.js"></script>
+</body>
+</html>
