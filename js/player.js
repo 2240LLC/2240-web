@@ -1,5 +1,5 @@
 // js/player.js
-const AUDIO_FILE = 'audio/tonsure-you-are-the-man.mp3';
+const AUDIO_FILE = 'https://tb-sounds.2240.us/You%20Are%20The%20Man.wav';
 const BAR_W      = 3;    // bar width  in CSS px
 const BAR_GAP    = 1.5;  // bar gap    in CSS px
 
