@@ -1,0 +1,49 @@
+/* neutral — default/unselected state */
+:root {
+  --bg:         #0a0a0a;
+  --fg:         rgba(255,255,255,0.82);
+  --meta:       rgba(255,255,255,0.3);
+  --accent:     rgba(255,255,255,0.7);
+  --grain-op:   0;
+  --glow-color: transparent;
+}
+
+/* Tonsure — You Are The Man */
+[data-mode="tonsure"] {
+  --bg:         #070707;
+  --fg:         rgba(239,239,239,0.9);
+  --meta:       rgba(239,239,239,0.3);
+  --accent:     rgba(239,239,239,0.88);
+  --grain-op:   1;
+  --glow-color: rgba(239,239,239,0.03);
+}
+
+/* Washboard */
+[data-mode="washboard"] {
+  --bg:         #020c1e;
+  --fg:         rgba(180,204,238,0.9);
+  --meta:       rgba(30,90,255,0.5);
+  --accent:     #1e5aff;
+  --grain-op:   0;
+  --glow-color: rgba(20,70,200,0.12);
+}
+
+/* The Patient */
+[data-mode="patient"] {
+  --bg:         #080408;
+  --fg:         rgba(208,192,204,0.9);
+  --meta:       rgba(140,16,32,0.6);
+  --accent:     #8c1020;
+  --grain-op:   0;
+  --glow-color: rgba(140,16,32,0.06);
+}
+
+/* Is It Even Easier? */
+[data-mode="statues"] {
+  --bg:         #eae5ee;
+  --fg:         rgba(40,36,48,0.9);
+  --meta:       rgba(104,112,160,0.7);
+  --accent:     #6870a0;
+  --grain-op:   0.5;
+  --glow-color: rgba(104,112,160,0.06);
+}
