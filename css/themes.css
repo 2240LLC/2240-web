@@ -40,10 +40,11 @@
 
 /* Is It Even Easier? */
 [data-mode="statues"] {
-  --bg:         #eae5ee;
-  --fg:         rgba(40,36,48,0.9);
-  --meta:       rgba(104,112,160,0.7);
-  --accent:     #6870a0;
-  --grain-op:   0.5;
-  --glow-color: rgba(104,112,160,0.06);
+  --bg:          #eae5ee;
+  --fg:          rgba(40,36,48,0.9);
+  --meta:        rgba(104,112,160,0.7);
+  --accent:      #6870a0;
+  --grain-op:    0.5;
+  --glow-color:  rgba(104,112,160,0.06);
+  --foot-border: rgba(40,36,48,0.08);
 }

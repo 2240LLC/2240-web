@@ -78,11 +78,10 @@ nav a.active {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-top: 1px solid rgba(255,255,255,0.04);
+  border-top: 1px solid var(--foot-border, rgba(255,255,255,0.04));
   position: relative;
   z-index: 10;
 }
-[data-mode="statues"] .foot { border-top-color: rgba(40,36,48,0.08); }
 
 .foot-copy {
   font-size: 8px;
