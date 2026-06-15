@@ -6,6 +6,7 @@ window.CATALOGUE = [
     title: 'You Are The Man', artist: 'Tonsure', mode: 'tonsure',
     dur: null, tags: ['ambient'],
     audio: 'https://tb-sounds.2240.us/You%20Are%20The%20Man.wav',
+    peaks: 'audio/peaks/tonsure.json',
     links: { Spotify: '', Apple: '', Bandcamp: '' },
   },
   {
@@ -13,6 +14,7 @@ window.CATALOGUE = [
     title: 'Washboard', artist: 'Toby Brown', mode: 'washboard',
     dur: null, tags: ['folk'],
     audio: 'https://tb-sounds.2240.us/Washboard_MSTR_2448.wav',
+    peaks: 'audio/peaks/washboard.json',
     links: { Spotify: '', Apple: '', Bandcamp: '' },
   },
   {

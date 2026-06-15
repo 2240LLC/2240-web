@@ -58,7 +58,7 @@
     document.querySelectorAll('.index-row')
       .forEach(row => row.classList.toggle('active', row.id === 'ix-' + id));
 
-    if (window.PLAYER) window.PLAYER.loadNewAudio(r.audio);
+    if (window.PLAYER) window.PLAYER.loadNewAudio(r.audio, r.peaks);
   }
 
   function setView(v) {
