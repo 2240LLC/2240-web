@@ -172,9 +172,10 @@ canvas.addEventListener('click', (e) => {
 window.addEventListener('resize', resize);
 
 // ── Audio loading ─────────────────────────────────────────────────────────────
-async function loadAudio() {
+async function loadAudio(url) {
+  const src = url || AUDIO_FILE;
   try {
-    const res = await fetch(AUDIO_FILE);
+    const res = await fetch(src);
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const raw = await res.arrayBuffer();
     const offCtx = new OfflineAudioContext(1, 1, 44100);
@@ -184,14 +185,25 @@ async function loadAudio() {
     draw();
   } catch (err) {
     console.warn('[player] Audio unavailable:', err.message);
-    // Flat placeholder so the UI isn't broken during dev
     bars = Array.from({ length: 300 }, () => 0.05);
     draw();
   }
 }
 
-// ── Public API (used by play button onclick and future sampler) ───────────────
-window.PLAYER = { togglePlay, seekTo, play, pause: stopPlayback };
+async function loadNewAudio(url) {
+  stopPlayback();
+  pauseOffset = 0;
+  audioBuffer = null;
+  bars = [];
+  timeCur.textContent = '0:00';
+  timeTot.textContent = ' / —:——';
+  draw();
+  if (url) await loadAudio(url);
+  else { bars = Array.from({ length: 300 }, () => 0.05); draw(); }
+}
+
+// ── Public API ────────────────────────────────────────────────────────────────
+window.PLAYER = { togglePlay, seekTo, play, pause: stopPlayback, loadNewAudio };
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 resize();

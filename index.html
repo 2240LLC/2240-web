@@ -8,38 +8,40 @@
   <link rel="stylesheet" href="css/themes.css">
   <style>
     body { display: flex; flex-direction: column; }
+    main { flex: 1; position: relative; z-index: 10; }
 
-    .feature {
-      flex: 1; display: flex; flex-direction: column;
-      justify-content: center; padding: 0 36px;
-      position: relative; z-index: 10;
+    /* ── Release rows ───────────────────────────────────────── */
+    .rel-row {
+      border-bottom: 1px solid var(--foot-border, rgba(255,255,255,0.06));
     }
-    .feature-eyebrow {
+
+    /* Expanded (featured) release */
+    .rel-row.expanded { padding: 32px 36px 0; }
+
+    .rel-eyebrow {
       font-size: 8px; letter-spacing: 0.3em; text-transform: uppercase;
-      color: var(--meta); margin-bottom: 16px;
+      color: var(--meta); margin-bottom: 14px;
     }
-    .feature-title {
-      font-size: clamp(36px, 6vw, 80px); font-weight: bold;
+    .rel-title {
+      font-size: clamp(32px, 5.5vw, 72px); font-weight: bold;
       letter-spacing: -0.03em; line-height: 0.95;
-      color: var(--fg); margin-bottom: 16px; max-width: 700px;
+      color: var(--fg); margin-bottom: 12px; max-width: 700px;
     }
-    .feature-artist {
+    .rel-artist {
       font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
-      color: var(--meta);
+      color: var(--meta); margin-bottom: 24px;
     }
 
-    /* waveform */
+    /* Waveform */
     .waveform-wrap {
-      position: relative; width: 100%; height: 140px;
+      position: relative; width: 100%; height: 120px;
       cursor: crosshair; flex-shrink: 0;
     }
     #waveform { display: block; width: 100%; height: 100%; }
-
     .playhead {
-      position: absolute; top: 0; left: 50%;
-      width: 1px; height: 100%;
-      background: rgba(239,239,239,0.55);
-      transform: translateX(-0.5px); pointer-events: none;
+      position: absolute; top: 0; left: 50%; width: 1px; height: 100%;
+      background: rgba(239,239,239,0.5); transform: translateX(-0.5px);
+      pointer-events: none;
     }
     .wf-fade {
       position: absolute; top: 0; width: 100px; height: 100%;
@@ -48,20 +50,18 @@
     .wf-fade-l { left:  0; background: linear-gradient(to right, var(--bg) 0%, transparent 100%); }
     .wf-fade-r { right: 0; background: linear-gradient(to left,  var(--bg) 0%, transparent 100%); }
 
-    /* transport */
+    /* Transport */
     .transport {
       display: flex; align-items: center; gap: 20px;
-      padding: 14px 36px; position: relative; z-index: 10; flex-shrink: 0;
+      padding: 14px 36px; flex-shrink: 0;
     }
-
     .play-btn {
       width: 36px; height: 36px; border-radius: 50%;
       border: 1px solid rgba(239,239,239,0.25); background: none;
       cursor: pointer; display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; transition: border-color 0.2s, background 0.2s;
+      flex-shrink: 0; transition: border-color 0.2s;
     }
     .play-btn:hover { border-color: rgba(239,239,239,0.6); }
-
     .icon-play {
       width: 0; height: 0; border-style: solid;
       border-width: 6px 0 6px 10px;
@@ -82,18 +82,34 @@
     }
     #time-current { color: var(--fg); opacity: 0.7; }
 
-    .stream-links { margin-left: auto; display: flex; gap: 18px; }
+    .stream-links { margin-left: auto; display: flex; gap: 18px; align-items: center; }
     .stream-link {
       font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase;
       color: var(--meta); text-decoration: none; transition: color 0.2s;
     }
     .stream-link:hover { color: var(--fg); }
 
-    .foot a {
-      font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase;
-      color: var(--meta); text-decoration: none; transition: color 0.2s;
+    /* Compact rows */
+    .rel-row.compact {
+      display: flex; align-items: center; gap: 32px;
+      padding: 0 36px; height: 56px;
+      cursor: pointer; opacity: 0.32;
+      transition: opacity 0.3s;
     }
-    .foot a:hover { color: var(--fg); }
+    .rel-row.compact:hover { opacity: 0.65; }
+
+    .compact-tag {
+      font-size: 7px; letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--meta); min-width: 108px; flex-shrink: 0;
+    }
+    .compact-title {
+      font-size: clamp(13px, 1.8vw, 18px); font-weight: bold;
+      letter-spacing: -0.02em; color: var(--fg);
+    }
+    .compact-artist {
+      font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--meta); margin-left: auto;
+    }
   </style>
 </head>
 <body>
@@ -101,50 +117,153 @@
     <a href="/" class="wordmark">2240</a>
     <nav>
       <a href="/" class="active">Home</a>
-      <a href="/releases.html">Releases</a>
       <a href="/contact.html">Contact</a>
     </nav>
   </div>
 
-  <div class="feature">
-    <p class="feature-eyebrow">New release · Tonsure · Single · 2026</p>
-    <h1 class="feature-title">You Are The Man</h1>
-    <p class="feature-artist">Tonsure — Ambient / New Age</p>
-  </div>
-
-  <div class="waveform-wrap" id="waveform-wrap">
-    <canvas id="waveform"
-            role="img"
-            aria-label="Audio waveform for You Are The Man by Tonsure. Click to seek.">
-      Audio waveform visualization
-    </canvas>
-    <div class="playhead"></div>
-    <div class="wf-fade wf-fade-l"></div>
-    <div class="wf-fade wf-fade-r"></div>
-  </div>
-
-  <div class="transport">
-    <button type="button" class="play-btn" id="play-btn"
-            aria-label="Play You Are The Man by Tonsure"
-            onclick="window.PLAYER && window.PLAYER.togglePlay()">
-      <div class="icon-play"></div>
-      <div class="icon-pause"><span></span><span></span></div>
-    </button>
-    <div class="time-display">
-      <span id="time-current">0:00</span><span id="time-total"> / —:——</span>
+  <main>
+    <!-- Featured release — metadata updates dynamically, player DOM stays fixed -->
+    <div class="rel-row expanded">
+      <p class="rel-eyebrow" id="rel-eyebrow">New · Single · 2026</p>
+      <h1 class="rel-title"  id="rel-title">You Are The Man</h1>
+      <p class="rel-artist"  id="rel-artist">Tonsure</p>
+      <div class="waveform-wrap">
+        <canvas id="waveform"
+                role="img"
+                aria-label="Audio waveform for You Are The Man by Tonsure. Click to seek.">
+          Audio waveform visualization
+        </canvas>
+        <div class="playhead"></div>
+        <div class="wf-fade wf-fade-l"></div>
+        <div class="wf-fade wf-fade-r"></div>
+      </div>
+      <div class="transport">
+        <button type="button" class="play-btn" id="play-btn"
+                aria-label="Play You Are The Man by Tonsure"
+                onclick="window.PLAYER && window.PLAYER.togglePlay()">
+          <div class="icon-play"></div>
+          <div class="icon-pause"><span></span><span></span></div>
+        </button>
+        <div class="time-display">
+          <span id="time-current">0:00</span><span id="time-total"> / —:——</span>
+        </div>
+        <div class="stream-links" id="stream-links"></div>
+      </div>
     </div>
-    <div class="stream-links">
-      <a href="YOUR_SPOTIFY_URL"  target="_blank" rel="noopener" class="stream-link" aria-label="Listen on Spotify (opens in new tab)">Spotify</a>
-      <a href="YOUR_APPLE_URL"    target="_blank" rel="noopener" class="stream-link" aria-label="Listen on Apple Music (opens in new tab)">Apple Music</a>
-      <a href="YOUR_BANDCAMP_URL" target="_blank" rel="noopener" class="stream-link" aria-label="Listen on Bandcamp (opens in new tab)">Bandcamp</a>
-    </div>
-  </div>
+
+    <!-- Catalogue — compact rows injected here -->
+    <div id="catalogue"></div>
+  </main>
 
   <div class="foot">
     <span class="foot-copy">© 2026 2240</span>
-    <a href="/releases.html">All releases →</a>
   </div>
 
   <script type="module" src="js/player.js"></script>
+  <script>
+  // ── Catalogue — add new releases to the TOP of this array ────────────────────
+  const RELEASES = [
+    {
+      id:     'tonsure',
+      tag:    'New · Single · 2026',
+      title:  'You Are The Man',
+      artist: 'Tonsure',
+      mode:   'tonsure',
+      audio:  'https://tb-sounds.2240.us/You%20Are%20The%20Man.wav',
+      links:  { Spotify: '', Apple: '', Bandcamp: '' },
+    },
+    {
+      id:     'washboard',
+      tag:    'Single · 2026',
+      title:  'Washboard',
+      artist: 'Toby Brown',
+      mode:   'washboard',
+      audio:  'https://tb-sounds.2240.us/Washboard_MSTR_2448.wav',
+      links:  { Spotify: '', Apple: '', Bandcamp: '' },
+    },
+    {
+      id:     'patient',
+      tag:    'LP · 2022',
+      title:  'The Patient',
+      artist: 'Toby Brown',
+      mode:   'patient',
+      audio:  null,
+      links:  { Spotify: '', Apple: '', Bandcamp: '' },
+    },
+    {
+      id:     'statues',
+      tag:    'Dual Single · 2021',
+      title:  'Is It Even Easier?',
+      artist: 'Toby Brown',
+      mode:   'statues',
+      audio:  null,
+      links:  { Spotify: '', Apple: '', Bandcamp: '' },
+    },
+  ];
+
+  let activeId = RELEASES[0].id;
+
+  function streamLinksHTML(links) {
+    return Object.entries(links)
+      .filter(([, url]) => url)
+      .map(([name, url]) =>
+        `<a href="${url}" target="_blank" rel="noopener" class="stream-link"
+            aria-label="Listen on ${name} (opens in new tab)">${name}</a>`)
+      .join('');
+  }
+
+  function renderCatalogue() {
+    const cat = document.getElementById('catalogue');
+    cat.innerHTML = RELEASES
+      .filter(r => r.id !== activeId)
+      .map(r => `
+        <div class="rel-row compact" id="row-${r.id}"
+             role="button" tabindex="0"
+             aria-label="Play ${r.title} by ${r.artist}">
+          <span class="compact-tag">${r.tag}</span>
+          <span class="compact-title">${r.title}</span>
+          <span class="compact-artist">${r.artist}</span>
+        </div>`)
+      .join('');
+
+    cat.querySelectorAll('.rel-row.compact').forEach(row => {
+      const id = row.id.replace('row-', '');
+      const activate = () => selectRelease(id);
+      row.addEventListener('click', activate);
+      row.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
+      });
+    });
+  }
+
+  function selectRelease(id) {
+    if (id === activeId) return;
+    const rel = RELEASES.find(r => r.id === id);
+    if (!rel) return;
+
+    activeId = id;
+    document.documentElement.setAttribute('data-mode', rel.mode);
+
+    document.getElementById('rel-eyebrow').textContent = rel.tag;
+    document.getElementById('rel-title').textContent   = rel.title;
+    document.getElementById('rel-artist').textContent  = rel.artist;
+    document.getElementById('stream-links').innerHTML  = streamLinksHTML(rel.links);
+
+    const canvas = document.getElementById('waveform');
+    canvas.setAttribute('aria-label',
+      `Audio waveform for ${rel.title} by ${rel.artist}. Click to seek.`);
+
+    const btn = document.getElementById('play-btn');
+    btn.setAttribute('aria-label', `Play ${rel.title} by ${rel.artist}`);
+
+    renderCatalogue();
+    if (window.PLAYER) window.PLAYER.loadNewAudio(rel.audio);
+  }
+
+  // Init: render stream links for first release, then catalogue
+  document.getElementById('stream-links').innerHTML =
+    streamLinksHTML(RELEASES[0].links);
+  renderCatalogue();
+  </script>
 </body>
 </html>
