@@ -206,5 +206,5 @@ async function loadNewAudio(url) {
 window.PLAYER = { togglePlay, seekTo, play, pause: stopPlayback, loadNewAudio };
 
 // ── Init ──────────────────────────────────────────────────────────────────────
+// Audio source is driven by js/library.js via loadNewAudio(); only size the canvas here.
 resize();
-loadAudio();

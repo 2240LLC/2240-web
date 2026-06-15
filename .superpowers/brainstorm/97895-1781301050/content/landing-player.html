@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2240 — landing player mockup</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { width: 100%; height: 100%; background: #070707; }
+
+  body {
+    font-family: 'Courier New', Courier, monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* grain */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 50;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+    opacity: 0.85;
+  }
+
+  /* topbar */
+  .topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 36px;
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0;
+  }
+
+  .wordmark {
+    font-size: 10px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: rgba(239,239,239,0.2);
+  }
+
+  nav { display: flex; gap: 28px; }
+
+  nav a {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: rgba(239,239,239,0.18);
+    text-decoration: none;
+  }
+
+  nav a.active {
+    color: rgba(239,239,239,0.55);
+    border-bottom: 1px solid rgba(239,239,239,0.25);
+    padding-bottom: 1px;
+  }
+
+  /* ── PLAYER AREA ── */
+  .player-wrap {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    position: relative;
+    z-index: 10;
+    padding: 0 0 12px;
+  }
+
+  /* release meta — sits above the waveform */
+  .release-meta {
+    padding: 0 36px 20px;
+  }
+
+  .release-eyebrow {
+    font-size: 7px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: rgba(239,239,239,0.18);
+    margin-bottom: 8px;
+  }
+
+  .release-title {
+    font-size: clamp(26px, 4.5vw, 56px);
+    font-weight: bold;
+    letter-spacing: -0.025em;
+    line-height: 1;
+    color: rgba(239,239,239,0.88);
+    margin-bottom: 6px;
+  }
+
+  .release-artist {
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: rgba(239,239,239,0.22);
+  }
+
+  /* ── WAVEFORM CANVAS ── */
+  .waveform-container {
+    position: relative;
+    width: 100%;
+    height: 160px;
+  }
+
+  #waveform {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* playhead — vertical line in center */
+  .playhead {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 1px;
+    height: 100%;
+    background: rgba(239,239,239,0.6);
+    transform: translateX(-0.5px);
+    pointer-events: none;
+  }
+
+  /* fades on left and right edges */
+  .waveform-fade-left,
+  .waveform-fade-right {
+    position: absolute;
+    top: 0;
+    width: 80px;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .waveform-fade-left {
+    left: 0;
+    background: linear-gradient(to right, #070707 0%, transparent 100%);
+  }
+
+  .waveform-fade-right {
+    right: 0;
+    background: linear-gradient(to left, #070707 0%, transparent 100%);
+  }
+
+  /* ── TRANSPORT CONTROLS ── */
+  .transport {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 16px 36px 0;
+  }
+
+  .play-btn {
+    width: 36px;
+    height: 36px;
+    border: 1px solid rgba(239,239,239,0.25);
+    border-radius: 50%;
+    background: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: border-color 0.2s, background 0.2s;
+    position: relative;
+  }
+
+  .play-btn:hover {
+    border-color: rgba(239,239,239,0.6);
+    background: rgba(239,239,239,0.05);
+  }
+
+  /* play icon */
+  .play-btn .icon-play {
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 6px 0 6px 10px;
+    border-color: transparent transparent transparent rgba(239,239,239,0.8);
+    margin-left: 2px;
+  }
+
+  /* pause icon */
+  .play-btn .icon-pause {
+    display: none;
+    gap: 3px;
+    align-items: center;
+  }
+
+  .play-btn .icon-pause span {
+    display: block;
+    width: 3px;
+    height: 12px;
+    background: rgba(239,239,239,0.8);
+    border-radius: 1px;
+  }
+
+  .play-btn.playing .icon-play { display: none; }
+  .play-btn.playing .icon-pause { display: flex; }
+
+  .time-display {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: rgba(239,239,239,0.3);
+    font-variant-numeric: tabular-nums;
+    min-width: 80px;
+  }
+
+  .time-current { color: rgba(239,239,239,0.65); }
+
+  .transport-right {
+    margin-left: auto;
+    display: flex;
+    gap: 16px;
+    align-items: center;
+  }
+
+  .stream-link {
+    font-size: 8px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(239,239,239,0.18);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+
+  .stream-link:hover { color: rgba(239,239,239,0.55); }
+
+  /* footer */
+  .foot {
+    padding: 16px 36px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid rgba(239,239,239,0.04);
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0;
+  }
+
+  .foot-left {
+    font-size: 8px;
+    letter-spacing: 0.15em;
+    color: rgba(239,239,239,0.08);
+  }
+
+  .releases-link {
+    font-size: 8px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(239,239,239,0.15);
+    text-decoration: none;
+  }
+
+  .releases-link:hover { color: rgba(239,239,239,0.45); }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <span class="wordmark">2240</span>
+    <nav>
+      <a href="#" class="active">Home</a>
+      <a href="#">Releases</a>
+      <a href="#">Contact</a>
+    </nav>
+  </div>
+
+  <div class="player-wrap">
+
+    <div class="release-meta">
+      <div class="release-eyebrow">New · Tonsure · Single · 2026</div>
+      <div class="release-title">You Are The Man</div>
+      <div class="release-artist">Tonsure</div>
+    </div>
+
+    <div class="waveform-container">
+      <canvas id="waveform"></canvas>
+      <div class="playhead"></div>
+      <div class="waveform-fade-left"></div>
+      <div class="waveform-fade-right"></div>
+    </div>
+
+    <div class="transport">
+      <button class="play-btn" id="playBtn" onclick="togglePlay()">
+        <div class="icon-play"></div>
+        <div class="icon-pause"><span></span><span></span></div>
+      </button>
+      <div class="time-display">
+        <span class="time-current" id="timeCurrent">0:00</span>
+        <span> / 3:42</span>
+      </div>
+      <div class="transport-right">
+        <a href="#" class="stream-link">Spotify</a>
+        <a href="#" class="stream-link">Apple Music</a>
+        <a href="#" class="stream-link">Bandcamp</a>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="foot">
+    <span class="foot-left">© 2026 2240</span>
+    <a href="#" class="releases-link">All releases →</a>
+  </div>
+
+<script>
+  /* ── waveform generation ── */
+  const BAR_W = 3;
+  const BAR_GAP = 1.5;
+  const TOTAL_BARS = 420;
+  const DURATION = 222; // 3:42 in seconds
+
+  /* seeded random — consistent waveform shape on every load */
+  function seeded(seed) {
+    let s = seed;
+    return () => {
+      s = Math.imul(1664525, s) + 1013904223 >>> 0;
+      return s / 0xFFFFFFFF;
+    };
+  }
+
+  const rng = seeded(0x4e414d45); // "NAME"
+
+  /* generate bar heights — envelope gives it organic shape */
+  const bars = Array.from({ length: TOTAL_BARS }, (_, i) => {
+    const t = i / TOTAL_BARS;
+    /* amplitude envelope — louder in middle, softer at ends */
+    const env = Math.sin(t * Math.PI) * 0.6 + 0.4;
+    /* mid-frequency wobble */
+    const wobble = Math.sin(t * Math.PI * 18) * 0.15
+                 + Math.sin(t * Math.PI * 7.3) * 0.08
+                 + Math.sin(t * Math.PI * 41) * 0.04;
+    /* noise */
+    const noise = rng() * 0.55 + 0.22;
+    return Math.max(0.04, Math.min(1, (noise + wobble) * env));
+  });
+
+  /* ── canvas drawing ── */
+  const canvas = document.getElementById('waveform');
+  const ctx = canvas.getContext('2d');
+  let scrollOffset = 0; // in bar units
+  let playing = false;
+  let animFrame = null;
+  let lastTime = null;
+  let elapsed = 0; // seconds
+
+  function resize() {
+    canvas.width  = canvas.offsetWidth  * window.devicePixelRatio;
+    canvas.height = canvas.offsetHeight * window.devicePixelRatio;
+    draw();
+  }
+
+  function draw() {
+    const W = canvas.width;
+    const H = canvas.height;
+    const dpr = window.devicePixelRatio;
+    const step = (BAR_W + BAR_GAP) * dpr;
+    const centerX = W / 2;
+
+    ctx.clearRect(0, 0, W, H);
+
+    /* scrollOffset: how many bars have scrolled past center */
+    const centerBarF = scrollOffset; // fractional bar at center
+    const startBar = Math.floor(centerBarF - centerX / step) - 2;
+    const endBar   = Math.ceil(centerBarF  + centerX / step) + 2;
+
+    for (let i = startBar; i <= endBar; i++) {
+      const barIdx = i;
+      const x = centerX + (i - centerBarF) * step;
+
+      if (x < -step || x > W + step) continue;
+
+      /* wrap or clamp bar index for height lookup */
+      const h = (barIdx >= 0 && barIdx < TOTAL_BARS)
+        ? bars[barIdx]
+        : 0.04;
+
+      const barH = h * H * 0.78;
+      const y = (H - barH) / 2;
+
+      /* played = left of center, unplayed = right */
+      const played = i < centerBarF;
+
+      if (played) {
+        ctx.fillStyle = `rgba(239,239,239,${0.55 + h * 0.35})`;
+      } else {
+        ctx.fillStyle = `rgba(239,239,239,${0.1 + h * 0.1})`;
+      }
+
+      ctx.fillRect(
+        Math.round(x - (BAR_W * dpr) / 2),
+        Math.round(y),
+        Math.round(BAR_W * dpr),
+        Math.round(barH)
+      );
+    }
+  }
+
+  /* ── playback simulation ── */
+  function formatTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  }
+
+  function tick(ts) {
+    if (!playing) return;
+    if (lastTime !== null) {
+      const dt = (ts - lastTime) / 1000;
+      elapsed = Math.min(elapsed + dt, DURATION);
+      scrollOffset = (elapsed / DURATION) * TOTAL_BARS;
+      document.getElementById('timeCurrent').textContent = formatTime(elapsed);
+      if (elapsed >= DURATION) { togglePlay(); elapsed = 0; scrollOffset = 0; }
+    }
+    lastTime = ts;
+    draw();
+    animFrame = requestAnimationFrame(tick);
+  }
+
+  function togglePlay() {
+    playing = !playing;
+    document.getElementById('playBtn').classList.toggle('playing', playing);
+    if (playing) {
+      lastTime = null;
+      animFrame = requestAnimationFrame(tick);
+    } else {
+      if (animFrame) cancelAnimationFrame(animFrame);
+      lastTime = null;
+    }
+  }
+
+  /* click waveform to scrub */
+  canvas.addEventListener('click', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const fraction = x / rect.width;
+    elapsed = fraction * DURATION;
+    scrollOffset = (elapsed / DURATION) * TOTAL_BARS;
+    document.getElementById('timeCurrent').textContent = formatTime(elapsed);
+    draw();
+  });
+
+  window.addEventListener('resize', resize);
+  resize();
+</script>
+</body>
+</html>

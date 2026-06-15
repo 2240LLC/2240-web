@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="neutral">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2240.us — layout v2</title>
+<style>
+  /* ── NEUTRAL (default) ── */
+  :root {
+    --bg:         #f2ede6;
+    --fg:         #111111;
+    --meta:       #999;
+    --border:     #d0cbc2;
+    --card-bg:    #e8e2d9;
+    --accent:     #111;
+    --grain-op:   0;
+    --glow-op:    0;
+  }
+
+  /* ── TONSURE: pure monochrome + grain ── */
+  [data-mode="tonsure"] {
+    --bg:         #070707;
+    --fg:         #efefef;
+    --meta:       #444;
+    --border:     #1e1e1e;
+    --card-bg:    #101010;
+    --accent:     #efefef;
+    --grain-op:   1;
+    --glow-op:    0;
+  }
+
+  /* ── WASHBOARD: deep ocean blue ── */
+  [data-mode="washboard"] {
+    --bg:         #020c1e;
+    --fg:         #b4ccee;
+    --meta:       #2a4880;
+    --border:     #081a38;
+    --card-bg:    #041428;
+    --accent:     #1e5aff;
+    --grain-op:   0;
+    --glow-op:    1;
+  }
+
+  /* ── THE PATIENT: near-black + deep crimson ── */
+  [data-mode="patient"] {
+    --bg:         #080408;
+    --fg:         #d0c0cc;
+    --meta:       #5a3040;
+    --border:     #1e0814;
+    --card-bg:    #100810;
+    --accent:     #8c1020;
+    --grain-op:   0;
+    --glow-op:    0;
+  }
+
+  /* ── IS IT EVEN EASIER: soft lavender film ── */
+  [data-mode="statues"] {
+    --bg:         #eae5ee;
+    --fg:         #282430;
+    --meta:       #8880a0;
+    --border:     #c8c0d4;
+    --card-bg:    #ddd8e4;
+    --accent:     #6870a0;
+    --grain-op:   0.6;
+    --glow-op:    0;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Courier New', Courier, monospace;
+    transition: background 0.6s ease, color 0.45s ease;
+    min-height: 100vh;
+  }
+
+  /* grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 200;
+    opacity: var(--grain-op);
+    transition: opacity 0.6s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+  }
+
+  /* blue glow for Washboard */
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 40%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: var(--glow-op);
+    transition: opacity 0.6s;
+    background: radial-gradient(ellipse at 50% 100%, rgba(20,60,200,0.15) 0%, transparent 70%);
+  }
+
+  .wrap {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 40px 32px 72px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 36px;
+  }
+
+  .wordmark {
+    font-size: 10px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--fg);
+    opacity: 0.4;
+    transition: color 0.45s, opacity 0.45s;
+    cursor: pointer;
+  }
+  .wordmark:hover { opacity: 0.7; }
+
+  .mode-indicator {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    transition: color 0.45s;
+    min-height: 14px;
+  }
+
+  /* ── CATALOGUE HEADER ── */
+  .cat-header {
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    padding: 9px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1px;
+    transition: border-color 0.5s;
+  }
+
+  .cat-label {
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--meta);
+    transition: color 0.45s;
+  }
+
+  .reset-btn {
+    font-family: inherit;
+    font-size: 8px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    background: none;
+    border: none;
+    color: var(--meta);
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 0;
+  }
+  .reset-btn:hover { color: var(--fg); }
+  [data-mode="neutral"] .reset-btn { display: none; }
+
+  /* ── GRID ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    transition: background 0.5s, border-color 0.5s;
+  }
+
+  .card {
+    background: var(--bg);
+    padding: 14px 14px 18px;
+    cursor: pointer;
+    transition: background 0.5s;
+    position: relative;
+  }
+
+  .card:hover { background: var(--card-bg); }
+
+  /* active card gets accent stripe */
+  .card.locked {
+    border-left: 2px solid var(--accent);
+  }
+
+  .card-tag {
+    font-size: 7px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--meta);
+    margin-bottom: 10px;
+    transition: color 0.45s;
+  }
+
+  .card-art {
+    width: 100%;
+    aspect-ratio: 1;
+    margin-bottom: 13px;
+    position: relative;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    transition: border-color 0.5s;
+  }
+
+  /* ── per-release artwork approximations ── */
+  .art-tonsure {
+    background: #050505;
+  }
+  /* fragmented geometry glint */
+  .art-tonsure::before {
+    content: '';
+    position: absolute;
+    top: 38%; left: 30%;
+    width: 40%; height: 1px;
+    background: rgba(255,255,255,0.25);
+    transform: rotate(-25deg);
+  }
+  .art-tonsure::after {
+    content: '';
+    position: absolute;
+    top: 45%; left: 45%;
+    width: 8px; height: 5px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 50%;
+    box-shadow: 0 0 14px 6px rgba(255,255,255,0.08);
+  }
+
+  .art-washboard {
+    background: linear-gradient(175deg, #030c1c 0%, #06183a 50%, #020a18 100%);
+  }
+  /* light on water column */
+  .art-washboard::after {
+    content: '';
+    position: absolute;
+    top: 20%; left: 50%;
+    transform: translateX(-50%);
+    width: 3px; height: 60%;
+    background: linear-gradient(to bottom, transparent 0%, rgba(80,130,255,0.35) 40%, rgba(60,110,255,0.2) 70%, transparent 100%);
+  }
+
+  .art-patient {
+    background: #050308;
+  }
+  /* glowing hand */
+  .art-patient::after {
+    content: '';
+    position: absolute;
+    bottom: 15%; left: 50%;
+    transform: translateX(-50%);
+    width: 35%; height: 45%;
+    background: radial-gradient(ellipse, rgba(220,240,255,0.2) 0%, rgba(40,80,200,0.12) 40%, transparent 70%);
+    border-radius: 40% 45% 30% 35%;
+  }
+
+  .art-statues {
+    background: linear-gradient(180deg, #c0bac8 0%, #d4d0dc 50%, #b8b4c4 100%);
+  }
+  /* soft figure silhouettes */
+  .art-statues::after {
+    content: '';
+    position: absolute;
+    bottom: 15%; left: 50%;
+    transform: translateX(-50%);
+    width: 50%; height: 50%;
+    background: radial-gradient(ellipse, rgba(240,238,244,0.6) 0%, transparent 70%);
+  }
+
+  .new-badge {
+    position: absolute;
+    top: 7px; right: 7px;
+    font-size: 6px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    padding: 2px 5px;
+    background: var(--accent);
+    color: var(--bg);
+    font-family: inherit;
+    transition: background 0.45s, color 0.45s;
+  }
+
+  .card-title {
+    font-size: 11px;
+    font-weight: bold;
+    color: var(--fg);
+    margin-bottom: 3px;
+    line-height: 1.3;
+    transition: color 0.45s;
+  }
+
+  .card-sub {
+    font-size: 9px;
+    color: var(--meta);
+    letter-spacing: 0.05em;
+    transition: color 0.45s;
+  }
+
+  /* ── INSTRUCTION BAR ── */
+  .info-bar {
+    border: 1px solid var(--border);
+    border-top: none;
+    padding: 9px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: border-color 0.5s;
+  }
+
+  .info-text {
+    font-size: 8px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--meta);
+    transition: color 0.45s;
+  }
+
+  .listen-link {
+    font-size: 8px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    text-decoration: none;
+    transition: color 0.45s;
+  }
+
+  /* ── FOOTER ── */
+  footer {
+    margin-top: 40px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: var(--meta);
+    letter-spacing: 0.15em;
+    transition: border-color 0.5s, color 0.45s;
+  }
+
+  /* ── DESIGN NOTE ── */
+  .design-note {
+    margin-top: 48px;
+    padding: 16px;
+    border: 1px dashed var(--border);
+    font-size: 10px;
+    color: var(--meta);
+    line-height: 1.9;
+    transition: border-color 0.5s, color 0.45s;
+  }
+
+  .design-note strong { color: var(--fg); transition: color 0.45s; }
+
+  @media (max-width: 640px) {
+    .grid { grid-template-columns: repeat(2, 1fr); }
+    .wrap { padding: 28px 20px 56px; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="topbar">
+    <span class="wordmark" onclick="reset()" title="click to reset">2240.us — catalogue</span>
+    <span class="mode-indicator" id="mode-label"></span>
+  </div>
+
+  <div class="cat-header">
+    <span class="cat-label">Music · 4 releases · 2021–2026</span>
+    <button class="reset-btn" id="reset-btn" onclick="reset()">← All releases</button>
+  </div>
+
+  <div class="grid">
+
+    <div class="card" id="card-tonsure"
+         onmouseenter="preview('tonsure')"
+         onmouseleave="unpreview()"
+         onclick="lock('tonsure', this)">
+      <div class="card-tag">New · Single</div>
+      <div class="card-art art-tonsure">
+        <div class="new-badge">New</div>
+      </div>
+      <div class="card-title">[single title]</div>
+      <div class="card-sub">Tonsure · 2026</div>
+    </div>
+
+    <div class="card" id="card-washboard"
+         onmouseenter="preview('washboard')"
+         onmouseleave="unpreview()"
+         onclick="lock('washboard', this)">
+      <div class="card-tag">Single</div>
+      <div class="card-art art-washboard"></div>
+      <div class="card-title">Washboard</div>
+      <div class="card-sub">Toby Brown · 2026</div>
+    </div>
+
+    <div class="card" id="card-patient"
+         onmouseenter="preview('patient')"
+         onmouseleave="unpreview()"
+         onclick="lock('patient', this)">
+      <div class="card-tag">LP</div>
+      <div class="card-art art-patient"></div>
+      <div class="card-title">The Patient</div>
+      <div class="card-sub">Toby Brown · 2022</div>
+    </div>
+
+    <div class="card" id="card-statues"
+         onmouseenter="preview('statues')"
+         onmouseleave="unpreview()"
+         onclick="lock('statues', this)">
+      <div class="card-tag">Dual Single</div>
+      <div class="card-art art-statues"></div>
+      <div class="card-title">Is It Even Easier?</div>
+      <div class="card-sub">Toby Brown · 2021</div>
+    </div>
+
+  </div>
+
+  <div class="info-bar">
+    <span class="info-text" id="info-text">Hover a release to preview its world · click to enter</span>
+    <a href="#" class="listen-link">Listen →</a>
+  </div>
+
+  <footer>
+    <span>© 2026 2240</span>
+    <span>Music · Projects</span>
+  </footer>
+
+  <div class="design-note">
+    <strong>Per-release personality system:</strong><br>
+    <strong>Tonsure debut</strong> → pure monochrome black + white, analog grain overlay<br>
+    <strong>Washboard</strong> → deep ocean blue (#020c1e), electric cobalt accent, water-light motif<br>
+    <strong>The Patient</strong> → near-black with deep crimson (#8c1020), sacred artifact feel<br>
+    <strong>Is It Even Easier?</strong> → soft lavender-cream, muted purple, the only light mode<br><br>
+    Hover previews the shift. Click locks the page. Click <em>2240.us</em> or <em>← All releases</em> to return to neutral.
+  </div>
+
+</div>
+<script>
+  const modes = {
+    tonsure:   { label: '● Tonsure — debut single',   info: 'Tonsure · ambient / new age · 2026' },
+    washboard: { label: '● Washboard',                 info: 'Toby Brown · single · 2026' },
+    patient:   { label: '● The Patient',               info: 'Toby Brown · LP · 2022' },
+    statues:   { label: '● Is It Even Easier?',        info: 'Toby Brown · dual single · 2021' },
+    neutral:   { label: '',                             info: 'Hover a release to preview its world · click to enter' },
+  };
+
+  let locked = null;
+
+  function setMode(m) {
+    document.documentElement.setAttribute('data-mode', m);
+    document.getElementById('mode-label').textContent = modes[m].label;
+    document.getElementById('info-text').textContent  = modes[m].info;
+  }
+
+  function preview(m) {
+    if (!locked) setMode(m);
+  }
+
+  function unpreview() {
+    if (!locked) setMode('neutral');
+  }
+
+  function lock(m, card) {
+    if (locked === m) { reset(); return; }
+    locked = m;
+    document.querySelectorAll('.card').forEach(c => c.classList.remove('locked'));
+    card.classList.add('locked');
+    document.getElementById('reset-btn').style.display = 'block';
+    setMode(m);
+  }
+
+  function reset() {
+    locked = null;
+    document.querySelectorAll('.card').forEach(c => c.classList.remove('locked'));
+    document.getElementById('reset-btn').style.display = 'none';
+    setMode('neutral');
+  }
+</script>
+</body>
+</html>

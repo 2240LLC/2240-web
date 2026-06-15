@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="2240 — a living sound archive by Toby Brown and Tonsure.">
   <title>2240</title>
   <link rel="stylesheet" href="css/base.css">
   <link rel="stylesheet" href="css/themes.css">
@@ -10,78 +11,62 @@
     body { display: flex; flex-direction: column; }
     main { flex: 1; position: relative; z-index: 10; }
 
-    /* ── Release rows ───────────────────────────────────────── */
-    .rel-row {
-      border-bottom: 1px solid var(--foot-border, rgba(255,255,255,0.06));
+    /* ── Topbar view toggle ─────────────────────────────────── */
+    .topbar-right { display: flex; align-items: center; gap: 28px; }
+    .view-toggle { display: flex; gap: 4px; }
+    .view-toggle button {
+      font-family: inherit; font-size: 11px; line-height: 1;
+      background: none; border: 1px solid var(--rule); color: var(--fg-faint);
+      width: 24px; height: 22px; cursor: pointer; transition: all 0.15s;
     }
+    .view-toggle button[aria-pressed="true"] { color: var(--fg); border-color: var(--fg-dim); }
+    .view-toggle button:hover { color: var(--fg-dim); }
 
-    /* Expanded (featured) release */
-    .rel-row.expanded { padding: 32px 36px 0; }
-
+    /* ── Focal player (persistent) ──────────────────────────── */
+    .focal { padding: 30px 36px 6px; border-bottom: 1px solid var(--rule); }
     .rel-eyebrow {
       font-size: 8px; letter-spacing: 0.3em; text-transform: uppercase;
       color: var(--meta); margin-bottom: 14px;
     }
+    .rel-eyebrow .flag {
+      color: var(--bg); background: var(--sys); padding: 2px 5px;
+      margin-right: 10px; letter-spacing: 0.2em;
+    }
     .rel-title {
-      font-size: clamp(32px, 5.5vw, 72px); font-weight: bold;
+      font-size: clamp(30px, 5vw, 64px); font-weight: bold;
       letter-spacing: -0.03em; line-height: 0.95;
-      color: var(--fg); margin-bottom: 12px; max-width: 700px;
+      color: var(--fg); margin-bottom: 10px; max-width: 700px;
     }
     .rel-artist {
       font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
-      color: var(--meta); margin-bottom: 24px;
+      color: var(--meta); margin-bottom: 22px;
     }
-
-    /* Waveform */
-    .waveform-wrap {
-      position: relative; width: 100%; height: 120px;
-      cursor: crosshair; flex-shrink: 0;
-    }
+    .waveform-wrap { position: relative; width: 100%; height: 110px; cursor: crosshair; }
     #waveform { display: block; width: 100%; height: 100%; }
     .playhead {
       position: absolute; top: 0; left: 50%; width: 1px; height: 100%;
-      background: rgba(239,239,239,0.5); transform: translateX(-0.5px);
-      pointer-events: none;
+      background: rgba(239,239,239,0.5); transform: translateX(-0.5px); pointer-events: none;
     }
-    .wf-fade {
-      position: absolute; top: 0; width: 100px; height: 100%;
-      pointer-events: none; z-index: 2;
-    }
-    .wf-fade-l { left:  0; background: linear-gradient(to right, var(--bg) 0%, transparent 100%); }
+    .wf-fade { position: absolute; top: 0; width: 90px; height: 100%; pointer-events: none; z-index: 2; }
+    .wf-fade-l { left: 0;  background: linear-gradient(to right, var(--bg) 0%, transparent 100%); }
     .wf-fade-r { right: 0; background: linear-gradient(to left,  var(--bg) 0%, transparent 100%); }
-
-    /* Transport */
-    .transport {
-      display: flex; align-items: center; gap: 20px;
-      padding: 14px 36px; flex-shrink: 0;
-    }
+    .transport { display: flex; align-items: center; gap: 20px; padding: 12px 0; }
     .play-btn {
-      width: 36px; height: 36px; border-radius: 50%;
-      border: 1px solid rgba(239,239,239,0.25); background: none;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(239,239,239,0.25);
+      background: none; cursor: pointer; display: flex; align-items: center; justify-content: center;
       flex-shrink: 0; transition: border-color 0.2s;
     }
     .play-btn:hover { border-color: rgba(239,239,239,0.6); }
     .icon-play {
-      width: 0; height: 0; border-style: solid;
-      border-width: 6px 0 6px 10px;
-      border-color: transparent transparent transparent rgba(239,239,239,0.8);
-      margin-left: 2px;
+      width: 0; height: 0; border-style: solid; border-width: 6px 0 6px 10px;
+      border-color: transparent transparent transparent rgba(239,239,239,0.8); margin-left: 2px;
     }
     .icon-pause { display: none; gap: 3px; align-items: center; }
-    .icon-pause span {
-      display: block; width: 3px; height: 12px;
-      background: rgba(239,239,239,0.8); border-radius: 1px;
-    }
+    .icon-pause span { display: block; width: 3px; height: 12px; background: rgba(239,239,239,0.8); border-radius: 1px; }
     .play-btn.playing .icon-play  { display: none; }
     .play-btn.playing .icon-pause { display: flex; }
-
-    .time-display {
-      font-size: 9px; letter-spacing: 0.1em;
-      color: var(--meta); font-variant-numeric: tabular-nums;
-    }
+    .time-display { font-size: 9px; letter-spacing: 0.1em; color: var(--meta); font-variant-numeric: tabular-nums; }
     #time-current { color: var(--fg); opacity: 0.7; }
-
     .stream-links { margin-left: auto; display: flex; gap: 18px; align-items: center; }
     .stream-link {
       font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase;
@@ -89,181 +74,146 @@
     }
     .stream-link:hover { color: var(--fg); }
 
-    /* Compact rows */
-    .rel-row.compact {
-      display: flex; align-items: center; gap: 32px;
-      padding: 0 36px; height: 56px;
-      cursor: pointer; opacity: 0.32;
-      transition: opacity 0.3s;
+    /* ── Constellation view ─────────────────────────────────── */
+    #view-constellation { position: relative; }
+    #constellation-stage {
+      position: relative; width: 100%; height: 460px; overflow: hidden;
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 48px 48px; background-position: center center;
     }
-    .rel-row.compact:hover { opacity: 0.65; }
+    #edge-layer { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+    .edge { stroke: var(--rule); stroke-width: 1; transition: stroke 0.4s; }
+    .edge-year { stroke-dasharray: 2 4; }
+    .edge-tag  { stroke: var(--fg-faint); }
+    .edge.active { stroke: var(--accent); stroke-opacity: 0.75; }
+    .node {
+      position: absolute; transform: translate(-50%, -50%);
+      background: none; border: none; cursor: pointer;
+      display: flex; align-items: center; gap: 8px; padding: 6px;
+    }
+    .node-dot {
+      width: 8px; height: 8px; border: 1px solid var(--fg-dim); border-radius: 50%;
+      transition: background 0.15s, border-color 0.15s, box-shadow 0.15s; flex-shrink: 0;
+    }
+    .node-label { font-size: 9px; letter-spacing: 0.06em; color: var(--fg-dim); white-space: nowrap; }
+    .node-no { color: var(--fg-faint); margin-right: 6px; }
+    .node:hover .node-dot { border-color: var(--fg); }
+    .node.active .node-dot { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
+    .node.active .node-label { color: var(--fg); }
+    .node:focus-visible { outline: 1px solid var(--accent); outline-offset: 3px; }
 
-    .compact-tag {
+    .legend {
+      position: absolute; bottom: 16px; right: 36px; z-index: 6;
+      font-size: 7px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--fg-faint); display: flex; flex-direction: column; gap: 5px; text-align: right;
+    }
+    .legend span::before { content: '—— '; color: var(--fg-dim); }
+    .legend .l-year::before { content: '- - '; }
+
+    /* ── Index view ─────────────────────────────────────────── */
+    #view-index { padding: 18px 36px 0; }
+    .index-head, .index-row {
+      display: grid; grid-template-columns: 48px 1fr 140px 48px 56px 44px;
+      align-items: center; gap: 16px; padding: 0 8px;
+    }
+    .index-head {
       font-size: 7px; letter-spacing: 0.22em; text-transform: uppercase;
-      color: var(--meta); min-width: 108px; flex-shrink: 0;
+      color: var(--fg-faint); height: 30px; border-bottom: 1px solid var(--rule);
     }
-    .compact-title {
-      font-size: clamp(13px, 1.8vw, 18px); font-weight: bold;
-      letter-spacing: -0.02em; color: var(--fg);
+    .index-row {
+      height: 42px; cursor: pointer; border-bottom: 1px solid var(--rule);
+      opacity: 0.5; transition: opacity 0.2s, background 0.2s;
     }
-    .compact-artist {
-      font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase;
-      color: var(--meta); margin-left: auto;
+    .index-row:hover { opacity: 0.85; background: rgba(239,239,239,0.02); }
+    .index-row.active { opacity: 1; }
+    .index-row.active .ix-no { color: var(--accent); }
+    .ix-no    { font-size: 9px; color: var(--fg-faint); font-variant-numeric: tabular-nums; }
+    .ix-title { font-size: 15px; font-weight: bold; letter-spacing: -0.02em; color: var(--fg); }
+    .ix-artist, .ix-year, .ix-dur {
+      font-size: 8px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--meta);
+      font-variant-numeric: tabular-nums;
+    }
+    .ix-new {
+      font-size: 7px; letter-spacing: 0.18em; color: var(--bg);
+      background: var(--sys); padding: 2px 4px; justify-self: end;
+    }
+    .index-foot {
+      font-size: 7px; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--fg-faint); padding: 14px 8px;
     }
   </style>
 </head>
 <body>
+  <div class="reg reg-tl"></div><div class="reg reg-tr"></div>
+  <div class="reg reg-bl"></div><div class="reg reg-br"></div>
+
   <div class="topbar">
     <a href="/" class="wordmark">2240</a>
-    <nav>
-      <a href="/" class="active">Home</a>
-      <a href="/contact.html">Contact</a>
-    </nav>
+    <div class="topbar-right">
+      <nav>
+        <a href="/" class="active">Home</a>
+        <a href="/contact.html">Contact</a>
+      </nav>
+      <div class="view-toggle" role="group" aria-label="View">
+        <button type="button" data-view="constellation" aria-pressed="true"  aria-label="Constellation view">◇</button>
+        <button type="button" data-view="index"         aria-pressed="false" aria-label="Index view">☰</button>
+      </div>
+    </div>
   </div>
 
   <main>
-    <!-- Featured release — metadata updates dynamically, player DOM stays fixed -->
-    <div class="rel-row expanded">
-      <p class="rel-eyebrow" id="rel-eyebrow">New · Single · 2026</p>
-      <h1 class="rel-title"  id="rel-title">You Are The Man</h1>
-      <p class="rel-artist"  id="rel-artist">Tonsure</p>
+    <!-- Persistent focal player; metadata + audio swap on selection -->
+    <div class="focal">
+      <p class="rel-eyebrow" id="rel-eyebrow"></p>
+      <h1 class="rel-title"  id="rel-title">2240</h1>
+      <p class="rel-artist"  id="rel-artist"></p>
       <div class="waveform-wrap">
-        <canvas id="waveform"
-                role="img"
-                aria-label="Audio waveform for You Are The Man by Tonsure. Click to seek.">
-          Audio waveform visualization
-        </canvas>
+        <canvas id="waveform" role="img" aria-label="Audio waveform. Click to seek.">Audio waveform visualization</canvas>
         <div class="playhead"></div>
         <div class="wf-fade wf-fade-l"></div>
         <div class="wf-fade wf-fade-r"></div>
       </div>
       <div class="transport">
-        <button type="button" class="play-btn" id="play-btn"
-                aria-label="Play You Are The Man by Tonsure"
+        <button type="button" class="play-btn" id="play-btn" aria-label="Play"
                 onclick="window.PLAYER && window.PLAYER.togglePlay()">
           <div class="icon-play"></div>
           <div class="icon-pause"><span></span><span></span></div>
         </button>
-        <div class="time-display">
-          <span id="time-current">0:00</span><span id="time-total"> / —:——</span>
-        </div>
+        <div class="time-display"><span id="time-current">0:00</span><span id="time-total"> / —:——</span></div>
         <div class="stream-links" id="stream-links"></div>
       </div>
     </div>
 
-    <!-- Catalogue — compact rows injected here -->
-    <div id="catalogue"></div>
+    <!-- Constellation view -->
+    <div id="view-constellation">
+      <div id="constellation-stage">
+        <svg id="edge-layer" preserveAspectRatio="none"></svg>
+      </div>
+      <div class="legend" aria-hidden="true">
+        <span class="l-artist">same artist</span>
+        <span class="l-year">same year</span>
+      </div>
+    </div>
+
+    <!-- Index view -->
+    <div id="view-index" style="display:none;">
+      <div class="index-head" role="row" aria-hidden="true">
+        <span>No.</span><span>Title</span><span>Artist</span><span>Yr</span><span>Dur</span><span></span>
+      </div>
+      <div id="index-body" role="table" aria-label="Catalogue index"></div>
+      <div class="index-foot" id="index-foot"></div>
+    </div>
   </main>
 
   <div class="foot">
     <span class="foot-copy">© 2026 2240</span>
   </div>
 
+  <script src="js/catalogue.js"></script>
   <script type="module" src="js/player.js"></script>
-  <script>
-  // ── Catalogue — add new releases to the TOP of this array ────────────────────
-  const RELEASES = [
-    {
-      id:     'tonsure',
-      tag:    'New · Single · 2026',
-      title:  'You Are The Man',
-      artist: 'Tonsure',
-      mode:   'tonsure',
-      audio:  'https://tb-sounds.2240.us/You%20Are%20The%20Man.wav',
-      links:  { Spotify: '', Apple: '', Bandcamp: '' },
-    },
-    {
-      id:     'washboard',
-      tag:    'Single · 2026',
-      title:  'Washboard',
-      artist: 'Toby Brown',
-      mode:   'washboard',
-      audio:  'https://tb-sounds.2240.us/Washboard_MSTR_2448.wav',
-      links:  { Spotify: '', Apple: '', Bandcamp: '' },
-    },
-    {
-      id:     'patient',
-      tag:    'LP · 2022',
-      title:  'The Patient',
-      artist: 'Toby Brown',
-      mode:   'patient',
-      audio:  null,
-      links:  { Spotify: '', Apple: '', Bandcamp: '' },
-    },
-    {
-      id:     'statues',
-      tag:    'Dual Single · 2021',
-      title:  'Is It Even Easier?',
-      artist: 'Toby Brown',
-      mode:   'statues',
-      audio:  null,
-      links:  { Spotify: '', Apple: '', Bandcamp: '' },
-    },
-  ];
-
-  let activeId = RELEASES[0].id;
-
-  function streamLinksHTML(links) {
-    return Object.entries(links)
-      .filter(([, url]) => url)
-      .map(([name, url]) =>
-        `<a href="${url}" target="_blank" rel="noopener" class="stream-link"
-            aria-label="Listen on ${name} (opens in new tab)">${name}</a>`)
-      .join('');
-  }
-
-  function renderCatalogue() {
-    const cat = document.getElementById('catalogue');
-    cat.innerHTML = RELEASES
-      .filter(r => r.id !== activeId)
-      .map(r => `
-        <div class="rel-row compact" id="row-${r.id}"
-             role="button" tabindex="0"
-             aria-label="Play ${r.title} by ${r.artist}">
-          <span class="compact-tag">${r.tag}</span>
-          <span class="compact-title">${r.title}</span>
-          <span class="compact-artist">${r.artist}</span>
-        </div>`)
-      .join('');
-
-    cat.querySelectorAll('.rel-row.compact').forEach(row => {
-      const id = row.id.replace('row-', '');
-      const activate = () => selectRelease(id);
-      row.addEventListener('click', activate);
-      row.addEventListener('keydown', e => {
-        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activate(); }
-      });
-    });
-  }
-
-  function selectRelease(id) {
-    if (id === activeId) return;
-    const rel = RELEASES.find(r => r.id === id);
-    if (!rel) return;
-
-    activeId = id;
-    document.documentElement.setAttribute('data-mode', rel.mode);
-
-    document.getElementById('rel-eyebrow').textContent = rel.tag;
-    document.getElementById('rel-title').textContent   = rel.title;
-    document.getElementById('rel-artist').textContent  = rel.artist;
-    document.getElementById('stream-links').innerHTML  = streamLinksHTML(rel.links);
-
-    const canvas = document.getElementById('waveform');
-    canvas.setAttribute('aria-label',
-      `Audio waveform for ${rel.title} by ${rel.artist}. Click to seek.`);
-
-    const btn = document.getElementById('play-btn');
-    btn.setAttribute('aria-label', `Play ${rel.title} by ${rel.artist}`);
-
-    renderCatalogue();
-    if (window.PLAYER) window.PLAYER.loadNewAudio(rel.audio);
-  }
-
-  // Init: render stream links for first release, then catalogue
-  document.getElementById('stream-links').innerHTML =
-    streamLinksHTML(RELEASES[0].links);
-  renderCatalogue();
-  </script>
+  <script src="js/constellation.js"></script>
+  <script src="js/library.js"></script>
 </body>
 </html>

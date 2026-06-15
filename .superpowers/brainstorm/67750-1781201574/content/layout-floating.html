@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en" data-mode="neutral">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2240.us — floating</title>
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --fg: rgba(255,255,255,0.15);
+    --meta: rgba(255,255,255,0.08);
+    --grain-op: 0;
+    --glow-color: transparent;
+  }
+
+  [data-mode="tonsure"] {
+    --bg: #070707;
+    --fg: rgba(239,239,239,0.9);
+    --meta: rgba(239,239,239,0.3);
+    --grain-op: 1;
+    --glow-color: rgba(239,239,239,0.03);
+  }
+
+  [data-mode="washboard"] {
+    --bg: #020c1e;
+    --fg: rgba(180,204,238,0.9);
+    --meta: rgba(30,90,255,0.5);
+    --grain-op: 0;
+    --glow-color: rgba(20,70,200,0.12);
+  }
+
+  [data-mode="patient"] {
+    --bg: #080408;
+    --fg: rgba(208,192,204,0.9);
+    --meta: rgba(140,16,32,0.6);
+    --grain-op: 0;
+    --glow-color: rgba(140,16,32,0.06);
+  }
+
+  [data-mode="statues"] {
+    --bg: #eae5ee;
+    --fg: rgba(40,36,48,0.9);
+    --meta: rgba(104,112,160,0.7);
+    --grain-op: 0.5;
+    --glow-color: rgba(104,112,160,0.06);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    width: 100%; height: 100%;
+    overflow: hidden;
+  }
+
+  body {
+    background: var(--bg);
+    font-family: 'Courier New', Courier, monospace;
+    transition: background 0.8s ease;
+    position: relative;
+  }
+
+  /* grain */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 50;
+    opacity: var(--grain-op);
+    transition: opacity 0.8s;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+  }
+
+  /* ambient glow */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background: radial-gradient(ellipse at 50% 50%, var(--glow-color) 0%, transparent 65%);
+    transition: background 0.8s;
+  }
+
+  /* ── WORDMARK ── */
+  .wordmark {
+    position: fixed;
+    top: 28px; left: 32px;
+    font-size: 9px;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.15);
+    z-index: 10;
+    cursor: pointer;
+    transition: color 0.6s;
+  }
+
+  [data-mode="statues"] .wordmark { color: rgba(40,36,48,0.25); }
+
+  .wordmark:hover { color: var(--fg); }
+
+  /* ── RESET ── */
+  .reset {
+    position: fixed;
+    top: 28px; right: 32px;
+    font-size: 8px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--meta);
+    z-index: 10;
+    cursor: pointer;
+    background: none;
+    border: none;
+    font-family: inherit;
+    padding: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: color 0.4s, opacity 0.4s;
+  }
+
+  .reset.visible { opacity: 1; pointer-events: all; }
+  .reset:hover { color: var(--fg); }
+
+  /* ── STAGE ── */
+  .stage {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+  }
+
+  /* ── RELEASE ELEMENT ── */
+  .release {
+    position: absolute;
+    cursor: pointer;
+    user-select: none;
+    transition: opacity 0.5s;
+  }
+
+  /* dim non-active when locked */
+  body.has-lock .release:not(.locked) {
+    opacity: 0.12;
+  }
+
+  .release-tag {
+    font-size: 7px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.18);
+    margin-bottom: 7px;
+    transition: color 0.6s;
+  }
+
+  [data-mode="statues"] .release-tag { color: rgba(40,36,48,0.3); }
+
+  .release.locked .release-tag { color: var(--meta); }
+
+  .release-title {
+    font-size: clamp(18px, 2.8vw, 36px);
+    font-weight: bold;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: rgba(255,255,255,0.18);
+    transition: color 0.6s, transform 0.4s;
+    margin-bottom: 6px;
+  }
+
+  [data-mode="statues"] .release-title { color: rgba(40,36,48,0.2); }
+
+  .release.locked .release-title {
+    color: var(--fg);
+  }
+
+  .release-sub {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.08);
+    transition: color 0.6s;
+  }
+
+  [data-mode="statues"] .release-sub { color: rgba(40,36,48,0.15); }
+
+  .release.locked .release-sub { color: var(--meta); }
+
+  /* listen link — only visible when locked */
+  .release-listen {
+    display: block;
+    font-size: 8px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--meta);
+    text-decoration: none;
+    margin-top: 10px;
+    opacity: 0;
+    transform: translateY(4px);
+    transition: opacity 0.4s 0.1s, transform 0.4s 0.1s, color 0.4s;
+    pointer-events: none;
+  }
+
+  .release.locked .release-listen {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: all;
+  }
+
+  .release-listen::after { content: ' →'; }
+
+  /* new dot */
+  .new-dot {
+    display: inline-block;
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    margin-left: 8px;
+    vertical-align: middle;
+    position: relative;
+    top: -2px;
+    transition: background 0.6s;
+  }
+
+  [data-mode="tonsure"] .new-dot   { background: rgba(239,239,239,0.8); box-shadow: 0 0 8px rgba(239,239,239,0.3); }
+  [data-mode="statues"] .new-dot   { background: rgba(104,112,160,0.6); }
+
+  /* ── DRIFT ANIMATIONS ── */
+  @keyframes drift-a {
+    0%   { transform: translate(0px, 0px); }
+    25%  { transform: translate(6px, -9px); }
+    50%  { transform: translate(-4px, -14px); }
+    75%  { transform: translate(-8px, -5px); }
+    100% { transform: translate(0px, 0px); }
+  }
+
+  @keyframes drift-b {
+    0%   { transform: translate(0px, 0px); }
+    33%  { transform: translate(-10px, 7px); }
+    66%  { transform: translate(7px, 12px); }
+    100% { transform: translate(0px, 0px); }
+  }
+
+  @keyframes drift-c {
+    0%   { transform: translate(0px, 0px); }
+    30%  { transform: translate(8px, -6px); }
+    60%  { transform: translate(3px, 10px); }
+    100% { transform: translate(0px, 0px); }
+  }
+
+  @keyframes drift-d {
+    0%   { transform: translate(0px, 0px); }
+    40%  { transform: translate(-6px, -10px); }
+    80%  { transform: translate(5px, -4px); }
+    100% { transform: translate(0px, 0px); }
+  }
+
+  #rel-tonsure   { animation: drift-a 14s ease-in-out infinite; }
+  #rel-washboard { animation: drift-b 18s ease-in-out infinite; }
+  #rel-patient   { animation: drift-c 22s ease-in-out infinite; }
+  #rel-statues   { animation: drift-d 16s ease-in-out infinite; }
+
+  /* pause drift when locked */
+  .release.locked { animation-play-state: paused; }
+
+  /* ── POSITIONS ── */
+  #rel-tonsure   { left: 6%;  top: 8%;  }
+  #rel-washboard { left: 54%; top: 18%; }
+  #rel-patient   { left: 24%; top: 30%; }
+  #rel-statues   { left: 62%; top: 6%;  }
+
+  /* ── FOOTER ── */
+  .foot {
+    position: fixed;
+    bottom: 24px; left: 32px;
+    font-size: 8px;
+    letter-spacing: 0.2em;
+    color: rgba(255,255,255,0.07);
+    z-index: 10;
+    transition: color 0.6s;
+  }
+
+  [data-mode="statues"] .foot { color: rgba(40,36,48,0.15); }
+
+</style>
+</head>
+<body>
+
+  <div class="wordmark" onclick="reset()">2240.us</div>
+  <button class="reset" id="reset-btn" onclick="reset()">← all</button>
+
+  <div class="stage">
+
+    <div class="release" id="rel-tonsure"
+         onmouseenter="preview('tonsure')"
+         onmouseleave="unpreview()"
+         onclick="lock('tonsure', this)">
+      <div class="release-tag">New · Single · 2026</div>
+      <div class="release-title">[debut single]<span class="new-dot"></span></div>
+      <div class="release-sub">Tonsure</div>
+      <a href="#" class="release-listen" onclick="return false;">Listen</a>
+    </div>
+
+    <div class="release" id="rel-washboard"
+         onmouseenter="preview('washboard')"
+         onmouseleave="unpreview()"
+         onclick="lock('washboard', this)">
+      <div class="release-tag">Single · 2026</div>
+      <div class="release-title">Washboard</div>
+      <div class="release-sub">Toby Brown</div>
+      <a href="#" class="release-listen" onclick="return false;">Listen</a>
+    </div>
+
+    <div class="release" id="rel-patient"
+         onmouseenter="preview('patient')"
+         onmouseleave="unpreview()"
+         onclick="lock('patient', this)">
+      <div class="release-tag">LP · 2022</div>
+      <div class="release-title">The Patient</div>
+      <div class="release-sub">Toby Brown</div>
+      <a href="#" class="release-listen" onclick="return false;">Listen</a>
+    </div>
+
+    <div class="release" id="rel-statues"
+         onmouseenter="preview('statues')"
+         onmouseleave="unpreview()"
+         onclick="lock('statues', this)">
+      <div class="release-tag">Dual Single · 2021</div>
+      <div class="release-title">Is It Even Easier?</div>
+      <div class="release-sub">Toby Brown</div>
+      <a href="#" class="release-listen" onclick="return false;">Listen</a>
+    </div>
+
+  </div>
+
+  <div class="foot">© 2026 2240</div>
+
+<script>
+  let locked = null;
+
+  function preview(m) {
+    if (!locked) document.documentElement.setAttribute('data-mode', m);
+  }
+
+  function unpreview() {
+    if (!locked) document.documentElement.setAttribute('data-mode', 'neutral');
+  }
+
+  function lock(m, el) {
+    if (locked === m) { reset(); return; }
+    locked = m;
+    document.documentElement.setAttribute('data-mode', m);
+    document.body.classList.add('has-lock');
+    document.querySelectorAll('.release').forEach(r => r.classList.remove('locked'));
+    el.classList.add('locked');
+    document.getElementById('reset-btn').classList.add('visible');
+  }
+
+  function reset() {
+    locked = null;
+    document.documentElement.setAttribute('data-mode', 'neutral');
+    document.body.classList.remove('has-lock');
+    document.querySelectorAll('.release').forEach(r => r.classList.remove('locked'));
+    document.getElementById('reset-btn').classList.remove('visible');
+  }
+</script>
+</body>
+</html>

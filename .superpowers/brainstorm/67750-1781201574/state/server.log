@@ -1,0 +1,12 @@
+{"type":"server-started","port":50964,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:50964","screen_dir":"/Users/tobybrown/dev/2240-web/.superpowers/brainstorm/67750-1781201574/content","state_dir":"/Users/tobybrown/dev/2240-web/.superpowers/brainstorm/67750-1781201574/state"}
+{"type":"screen-added","file":"/Users/tobybrown/dev/2240-web/.superpowers/brainstorm/67750-1781201574/content/aesthetic-direction.html"}
+{"type":"screen-added","file":"/Users/tobybrown/dev/2240-web/.superpowers/brainstorm/67750-1781201574/content/layout-mockup.html"}
+{"type":"screen-added","file":"/Users/tobybrown/dev/2240-web/.superpowers/brainstorm/67750-1781201574/content/layout-v2.html"}
+{"type":"screen-added","file":"/Users/tobybrown/dev/2240-web/.superpowers/brainstorm/67750-1781201574/content/layout-directions.html"}
+{"type":"screen-added","file":"/Users/tobybrown/dev/2240-web/.superpowers/brainstorm/67750-1781201574/content/layout-floating.html"}
+{"type":"screen-updated","file":"/Users/tobybrown/dev/2240-web/.superpowers/brainstorm/67750-1781201574/content/layout-floating.html"}
+{"type":"screen-added","file":"/Users/tobybrown/dev/2240-web/.superpowers/brainstorm/67750-1781201574/content/landing-mockup.html"}
+{"type":"screen-added","file":"/Users/tobybrown/dev/2240-web/.superpowers/brainstorm/67750-1781201574/content/landing-nav.html"}
+{"type":"screen-added","file":"/Users/tobybrown/dev/2240-web/.superpowers/brainstorm/67750-1781201574/content/landing-nav2.html"}
+{"type":"screen-added","file":"/Users/tobybrown/dev/2240-web/.superpowers/brainstorm/67750-1781201574/content/landing-player.html"}
+{"type":"server-stopped","reason":"idle timeout"}
