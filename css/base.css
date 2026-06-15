@@ -7,7 +7,7 @@ body {
   color: var(--fg);
   font-family: 'Courier New', Courier, monospace;
   min-height: 100vh;
-  transition: background 0.8s ease, color 0.6s ease;
+  transition: color 0.6s ease;
   position: relative;
 }
 
@@ -89,3 +89,20 @@ nav a.active {
   color: var(--fg);
   opacity: 0.12;
 }
+
+/* ── Archive chrome ──────────────────────────────────────────── */
+.reg {
+  position: absolute;
+  width: 9px; height: 9px;
+  pointer-events: none;
+  z-index: 5;
+}
+.reg::before, .reg::after {
+  content: ''; position: absolute; background: var(--fg-faint);
+}
+.reg::before { left: 4px; top: 0; width: 1px; height: 9px; }
+.reg::after  { top: 4px; left: 0; width: 9px; height: 1px; }
+.reg-tl { top: 14px;    left: 14px; }
+.reg-tr { top: 14px;    right: 14px; }
+.reg-bl { bottom: 14px; left: 14px; }
+.reg-br { bottom: 14px; right: 14px; }

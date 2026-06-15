@@ -1,50 +1,22 @@
-/* neutral — default/unselected state */
+/* Base tokens — apply to every mode. Background/foreground never change. */
 :root {
   --bg:         #0a0a0a;
-  --fg:         rgba(255,255,255,0.82);
-  --meta:       rgba(255,255,255,0.3);
-  --accent:     rgba(255,255,255,0.7);
-  --grain-op:   0;
-  --glow-color: transparent;
-}
-
-/* Tonsure — You Are The Man */
-[data-mode="tonsure"] {
-  --bg:         #070707;
-  --fg:         rgba(239,239,239,0.9);
-  --meta:       rgba(239,239,239,0.3);
-  --accent:     rgba(239,239,239,0.88);
-  --grain-op:   1;
+  --fg:         #efefef;
+  --fg-dim:     rgba(239,239,239,0.45);
+  --fg-faint:   rgba(239,239,239,0.18);
+  --meta:       rgba(239,239,239,0.45);   /* alias for legacy references */
+  --rule:       rgba(239,239,239,0.12);
+  --grid:       rgba(239,239,239,0.035);
+  --paper:      #e8e6df;
+  --sys:        #f5d020;                   /* fixed interface-state accent */
+  --accent:     #efefef;                   /* default = pure mono */
   --glow-color: rgba(239,239,239,0.03);
+  --grain-op:   0.55;
+  --foot-border: var(--rule);
 }
 
-/* Washboard */
-[data-mode="washboard"] {
-  --bg:         #020c1e;
-  --fg:         rgba(180,204,238,0.9);
-  --meta:       rgba(30,90,255,0.5);
-  --accent:     #1e5aff;
-  --grain-op:   0;
-  --glow-color: rgba(20,70,200,0.12);
-}
-
-/* The Patient */
-[data-mode="patient"] {
-  --bg:         #080408;
-  --fg:         rgba(208,192,204,0.9);
-  --meta:       rgba(140,16,32,0.6);
-  --accent:     #8c1020;
-  --grain-op:   0;
-  --glow-color: rgba(140,16,32,0.06);
-}
-
-/* Is It Even Easier? */
-[data-mode="statues"] {
-  --bg:          #eae5ee;
-  --fg:          rgba(40,36,48,0.9);
-  --meta:        rgba(104,112,160,0.7);
-  --accent:      #6870a0;
-  --grain-op:    0.5;
-  --glow-color:  rgba(104,112,160,0.06);
-  --foot-border: rgba(40,36,48,0.08);
-}
+/* Per-release: ONLY the accent and its glow change. */
+[data-mode="tonsure"]   { --accent:#efefef; --glow-color:rgba(239,239,239,0.04); }
+[data-mode="washboard"] { --accent:#2e6bff; --glow-color:rgba(46,107,255,0.10); }
+[data-mode="patient"]   { --accent:#b3122a; --glow-color:rgba(179,18,42,0.09); }
+[data-mode="statues"]   { --accent:#8e95c8; --glow-color:rgba(142,149,200,0.09); }
