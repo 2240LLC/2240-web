@@ -16,6 +16,13 @@ audioEl.preload = 'auto';
 let rawPeaks  = [];   // high-res normalised peaks from JSON
 let bars      = [];   // downsampled to canvas width
 let animFrame = null;
+let waveRGB   = '239,239,239';   // bar colour (r,g,b), driven by CSS var --wave
+
+// Read the active foreground colour for the waveform from CSS (theme-aware).
+function readWaveColor() {
+  const v = getComputedStyle(document.documentElement).getPropertyValue('--wave').trim();
+  if (v) waveRGB = v;
+}
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 function fmt(s) {
@@ -47,6 +54,7 @@ function resize() {
   const dpr = window.devicePixelRatio || 1;
   canvas.width  = Math.round(canvas.offsetWidth  * dpr);
   canvas.height = Math.round(canvas.offsetHeight * dpr);
+  readWaveColor();
   downsample();
   draw();
 }
@@ -73,8 +81,8 @@ function draw() {
     const barX = Math.round(x - (BAR_W * dpr) / 2);
     const done = i < centerBarF;
     ctx2.fillStyle = done
-      ? `rgba(239,239,239,${(0.55 + h * 0.35).toFixed(2)})`
-      : `rgba(239,239,239,${(0.10 + h * 0.10).toFixed(2)})`;
+      ? `rgba(${waveRGB},${(0.55 + h * 0.35).toFixed(2)})`
+      : `rgba(${waveRGB},${(0.10 + h * 0.10).toFixed(2)})`;
     ctx2.fillRect(barX, barY, Math.round(BAR_W * dpr), barH);
   });
 
@@ -157,7 +165,8 @@ canvas.addEventListener('click', (e) => {
 window.addEventListener('resize', resize);
 
 // ── Public API ────────────────────────────────────────────────────────────────────
-window.PLAYER = { togglePlay, seekTo, play, pause, loadNewAudio };
+window.PLAYER = { togglePlay, seekTo, play, pause, loadNewAudio,
+                  refreshTheme: () => { readWaveColor(); draw(); } };
 
 // ── Init ────────────────────────────────────────────────────────────────────────
 resize();

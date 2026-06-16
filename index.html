@@ -5,20 +5,53 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="2240 — a sound archive by Toby Brown and Tonsure. Full archive in preparation.">
   <title>2240 — Sound Archive</title>
+  <script>
+    /* Apply saved theme before first paint to avoid a flash. 'system' (or unset) follows the OS. */
+    (function () {
+      try {
+        var t = localStorage.getItem('theme');
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* Chicago FLF — faithful classic-Macintosh system face (self-host before going live) */
+    @font-face {
+      font-family: 'ChicagoFLF';
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+      src: url('https://cdn.jsdelivr.net/gh/sakofchit/system.css@main/fonts/ChicagoFLF.woff2') format('woff2'),
+           url('https://cdn.jsdelivr.net/gh/sakofchit/system.css@main/fonts/ChicagoFLF.woff') format('woff');
+    }
+  </style>
   <style>
     /* ══════════════════════════════════════════════════════════════
        2240 — placeholder. Avant-garde archival / file-system record.
        Self-contained: inline styles + js/player.js (streaming engine).
        ══════════════════════════════════════════════════════════════ */
     :root {
-      --bg:       #0a0a0a;
-      --fg:       #efefef;
-      --fg-dim:   rgba(239,239,239,0.45);
-      --fg-faint: rgba(239,239,239,0.20);
-      --rule:     rgba(239,239,239,0.13);
-      --grid:     rgba(239,239,239,0.035);
-      --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      --display: "ChicagoFLF", "IBM Plex Mono", ui-monospace, Menlo, monospace;
+      /* Tokens derived from a single fg triplet + bg — so alpha tints work in both modes. */
+      --fg:       rgb(var(--fg-rgb));
+      --fg-dim:   rgba(var(--fg-rgb), 0.50);
+      --fg-faint: rgba(var(--fg-rgb), 0.22);
+      --rule:     rgba(var(--fg-rgb), 0.14);
+      --wave:     var(--fg-rgb);
     }
+    /* Dark = default */
+    :root { --fg-rgb: 239,239,239; --bg: #0a0a0a; }
+    /* Follow the OS when the user hasn't chosen */
+    @media (prefers-color-scheme: light) {
+      :root { --fg-rgb: 22,22,20; --bg: #f1efe8; }
+    }
+    /* Explicit user choice always wins */
+    :root[data-theme="dark"]  { --fg-rgb: 239,239,239; --bg: #0a0a0a; }
+    :root[data-theme="light"] { --fg-rgb: 22,22,20;    --bg: #f1efe8; }
 
     * , *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { -webkit-font-smoothing: antialiased; }
@@ -31,17 +64,11 @@
       flex-direction: column;
       position: relative;
       overflow-x: hidden;
+      transition: background 0.3s ease, color 0.3s ease;
     }
 
-    /* ── Background: faint coordinate grid + node-graph plot ───────── */
-    .backdrop {
-      position: fixed; inset: 0; z-index: 0; pointer-events: none;
-      background-image:
-        linear-gradient(var(--grid) 1px, transparent 1px),
-        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-      background-size: 46px 46px;
-    }
-    #netgraph { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.5; }
+    /* ── Background: faint node-graph plot ────────────────────────── */
+    #netgraph { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.55; }
 
     /* ── Registration marks ───────────────────────────────────────── */
     .reg { position: fixed; width: 9px; height: 9px; z-index: 4; pointer-events: none; }
@@ -59,9 +86,18 @@
     /* ── Top bar ──────────────────────────────────────────────────── */
     .topbar { display: flex; align-items: baseline; justify-content: space-between;
               padding: 30px 0 0; }
-    .wordmark { font-size: 22px; font-weight: 700; letter-spacing: 0.02em; }
+    .wordmark { font-family: var(--display); font-size: 23px; font-weight: 400; letter-spacing: 0.02em; }
+    .topbar-right { display: flex; align-items: flex-start; gap: 18px; }
     .topbar-meta { font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
                    color: var(--fg-dim); text-align: right; line-height: 1.8; }
+    .theme-toggle { font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em;
+                    text-transform: uppercase; color: var(--fg-dim); cursor: pointer;
+                    background: none; border: 1px solid var(--rule); padding: 6px 9px;
+                    display: inline-flex; align-items: center; gap: 7px;
+                    transition: color 0.15s, border-color 0.15s; }
+    .theme-toggle:hover { color: var(--fg); border-color: var(--fg-dim); }
+    .theme-toggle:focus-visible { outline: 1px solid var(--fg-dim); outline-offset: 2px; }
+    .theme-toggle .glyph { width: 9px; height: 9px; flex-shrink: 0; }
 
     /* ── Status strip ─────────────────────────────────────────────── */
     .statusbar { display: flex; align-items: center; gap: 12px;
@@ -80,8 +116,8 @@
                    color: var(--fg-dim); display: flex; align-items: center; gap: 12px; }
     .flag { background: var(--fg); color: var(--bg); padding: 2px 6px;
             letter-spacing: 0.16em; font-weight: 700; }
-    .rec-title { font-size: clamp(38px, 7vw, 78px); font-weight: 700;
-                 letter-spacing: -0.03em; line-height: 0.96; margin: 16px 0 10px; }
+    .rec-title { font-family: var(--display); font-size: clamp(34px, 6vw, 68px); font-weight: 400;
+                 letter-spacing: 0; line-height: 1.02; margin: 16px 0 12px; }
     .rec-artist { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
                   color: var(--fg-dim); }
 
@@ -90,7 +126,7 @@
     .waveform-wrap { position: relative; width: 100%; height: 96px; cursor: crosshair; }
     #waveform { display: block; width: 100%; height: 100%; }
     .playhead { position: absolute; top: 0; left: 50%; width: 1px; height: 100%;
-                background: rgba(239,239,239,0.5); transform: translateX(-0.5px);
+                background: rgba(var(--fg-rgb),0.5); transform: translateX(-0.5px);
                 pointer-events: none; }
     .wf-fade { position: absolute; top: 0; width: 80px; height: 100%;
                pointer-events: none; z-index: 2; }
@@ -99,16 +135,16 @@
 
     .transport { display: flex; align-items: center; gap: 18px; padding: 16px 0; }
     .play-btn { width: 38px; height: 38px; border-radius: 50%;
-                border: 1px solid rgba(239,239,239,0.3); background: none; cursor: pointer;
+                border: 1px solid rgba(var(--fg-rgb),0.3); background: none; cursor: pointer;
                 display: flex; align-items: center; justify-content: center;
                 flex-shrink: 0; transition: border-color 0.2s; }
-    .play-btn:hover { border-color: rgba(239,239,239,0.7); }
+    .play-btn:hover { border-color: rgba(var(--fg-rgb),0.7); }
     .icon-play { width: 0; height: 0; border-style: solid; border-width: 6px 0 6px 10px;
-                 border-color: transparent transparent transparent rgba(239,239,239,0.85);
+                 border-color: transparent transparent transparent rgba(var(--fg-rgb),0.85);
                  margin-left: 2px; }
     .icon-pause { display: none; gap: 3px; align-items: center; }
     .icon-pause span { display: block; width: 3px; height: 13px;
-                       background: rgba(239,239,239,0.85); }
+                       background: rgba(var(--fg-rgb),0.85); }
     .play-btn.playing .icon-play { display: none; }
     .play-btn.playing .icon-pause { display: flex; }
     .time-display { font-size: 10px; letter-spacing: 0.08em; color: var(--fg-dim);
@@ -137,8 +173,8 @@
                 border: 1px solid currentColor; flex-shrink: 0; }
     .btn-download { background: var(--fg); color: var(--bg); border-color: var(--fg);
                     font-weight: 700; margin-left: auto; }
-    .btn-download:hover { background: rgba(239,239,239,0.85); color: var(--bg);
-                          border-color: rgba(239,239,239,0.85); }
+    .btn-download:hover { background: rgba(var(--fg-rgb),0.85); color: var(--bg);
+                          border-color: rgba(var(--fg-rgb),0.85); }
     .btn-download .arrow { font-size: 12px; }
     .btn[aria-disabled="true"] { opacity: 0.4; pointer-events: none; }
 
@@ -151,11 +187,11 @@
             align-items: center; gap: 14px; padding: 14px 4px; cursor: pointer;
             border-bottom: 1px solid var(--rule);
             opacity: 0.55; transition: opacity 0.18s, background 0.18s; }
-    .hrow:hover { opacity: 1; background: rgba(239,239,239,0.025); }
+    .hrow:hover { opacity: 1; background: rgba(var(--fg-rgb),0.05); }
     .hrow.active { opacity: 1; }
     .hrow.active .h-no { color: var(--fg); }
     .h-no { font-size: 10px; color: var(--fg-faint); font-variant-numeric: tabular-nums; }
-    .h-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+    .h-title { font-family: var(--display); font-size: 15px; font-weight: 400; letter-spacing: 0; }
     .h-artist, .h-year { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
                          color: var(--fg-dim); }
     .h-load { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
@@ -186,7 +222,6 @@
   </style>
 </head>
 <body>
-  <div class="backdrop"></div>
   <svg id="netgraph" preserveAspectRatio="none" aria-hidden="true"></svg>
   <div class="reg reg-tl"></div><div class="reg reg-tr"></div>
   <div class="reg reg-bl"></div><div class="reg reg-br"></div>
@@ -194,8 +229,15 @@
   <div class="shell">
     <header class="topbar">
       <a href="/" class="wordmark">2240</a>
-      <div class="topbar-meta">
-        Sound Archive<br>Est. 2026 · Holdings 002
+      <div class="topbar-right">
+        <button type="button" class="theme-toggle" id="theme-toggle"
+                aria-label="Theme: system" title="Switch theme">
+          <svg class="glyph" viewBox="0 0 10 10" aria-hidden="true" id="theme-glyph"></svg>
+          <span id="theme-label">System</span>
+        </button>
+        <div class="topbar-meta">
+          Sound Archive<br>Est. 2026 · Holdings 002
+        </div>
       </div>
     </header>
 
@@ -237,7 +279,9 @@
         <dl class="fields">
           <div class="field"><dt>Catalogue</dt><dd id="f-cat">2240-001</dd></div>
           <div class="field"><dt>Artist</dt><dd id="f-artist">Tonsure</dd></div>
-          <div class="field"><dt>Format</dt><dd id="f-format">Lossless WAV</dd></div>
+          <div class="field"><dt>Format</dt><dd id="f-format">WAV</dd></div>
+          <div class="field"><dt>Sample rate</dt><dd id="f-sr">48 kHz</dd></div>
+          <div class="field"><dt>Bit depth</dt><dd id="f-bd">24-bit</dd></div>
           <div class="field"><dt>Duration</dt><dd id="f-dur">—:——</dd></div>
           <div class="field"><dt>Year</dt><dd id="f-year">2026</dd></div>
         </dl>
@@ -269,7 +313,8 @@
     const CATALOGUE = [
       {
         no: '2240-001', title: 'You Are The Man', artist: 'Tonsure',
-        kind: 'Single', year: 2026, isNew: true, format: 'Lossless WAV',
+        kind: 'Single', year: 2026, isNew: true,
+        format: 'WAV', sampleRate: '48 kHz', bitDepth: '24-bit',
         audio: 'https://tb-sounds.2240.us/You%20Are%20The%20Man.wav',
         peaks: 'audio/peaks/tonsure.json',
         download: 'You Are The Man — Tonsure (2240-001).wav',
@@ -277,7 +322,8 @@
       },
       {
         no: '2240-002', title: 'Washboard', artist: 'Toby Brown',
-        kind: 'Single', year: 2026, isNew: false, format: 'Lossless WAV · 24-bit / 48 kHz',
+        kind: 'Single', year: 2026, isNew: false,
+        format: 'WAV', sampleRate: '48 kHz', bitDepth: '24-bit',
         audio: 'https://tb-sounds.2240.us/Washboard_MSTR_2448.wav',
         peaks: 'audio/peaks/washboard.json',
         download: 'Washboard — Toby Brown (2240-002).wav',
@@ -329,7 +375,7 @@
       const dl = document.createElement('button');
       dl.type = 'button';
       dl.className = 'btn btn-download';
-      dl.setAttribute('aria-label', 'Download lossless WAV — free');
+      dl.setAttribute('aria-label', 'Download WAV — free');
       dl.innerHTML = '<span class="arrow">↓</span><span class="label">Download · WAV · Free</span>';
       dl.addEventListener('click', () => download(rec, dl));
       wrap.appendChild(dl);
@@ -369,6 +415,8 @@
       $('f-cat').textContent    = r.no;
       $('f-artist').textContent = r.artist;
       $('f-format').textContent = r.format;
+      $('f-sr').textContent     = r.sampleRate;
+      $('f-bd').textContent     = r.bitDepth;
       $('f-year').textContent   = r.year;
       $('f-dur').textContent    = '—:——';
       $('waveform').setAttribute('aria-label',
@@ -397,6 +445,8 @@
       const W = window.innerWidth, H = window.innerHeight;
       svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
       const NS = 'http://www.w3.org/2000/svg';
+      const fg = (getComputedStyle(document.documentElement)
+        .getPropertyValue('--fg-rgb').trim()) || '239,239,239';
       svg.innerHTML = '';
       // deterministic pseudo-random
       let s = 2240;
@@ -416,7 +466,7 @@
             const ln = document.createElementNS(NS, 'line');
             ln.setAttribute('x1', a.x); ln.setAttribute('y1', a.y);
             ln.setAttribute('x2', b.x); ln.setAttribute('y2', b.y);
-            ln.setAttribute('stroke', 'rgba(239,239,239,0.06)');
+            ln.setAttribute('stroke', `rgba(${fg},0.07)`);
             ln.setAttribute('stroke-width', '1');
             svg.appendChild(ln);
           }
@@ -425,7 +475,7 @@
       pts.forEach(p => {
         const c = document.createElementNS(NS, 'circle');
         c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', p.r);
-        c.setAttribute('fill', 'rgba(239,239,239,0.10)');
+        c.setAttribute('fill', `rgba(${fg},0.12)`);
         svg.appendChild(c);
       });
     }
@@ -434,7 +484,44 @@
       clearTimeout(rzTimer); rzTimer = setTimeout(drawNetgraph, 150);
     });
 
+    // ── Theme: system default, with light/dark override ───────────────────────
+    const THEMES = ['system', 'light', 'dark'];
+    const GLYPHS = {
+      system: '<circle cx="5" cy="5" r="4" fill="none" stroke="currentColor" stroke-width="1"/>' +
+              '<path d="M5 1 a4 4 0 0 1 0 8 z" fill="currentColor"/>',
+      light:  '<circle cx="5" cy="5" r="2.3" fill="currentColor"/>' +
+              '<g stroke="currentColor" stroke-width="1"><path d="M5 0v1.4M5 8.6V10M0 5h1.4M8.6 5H10M1.5 1.5l1 1M7.5 7.5l1 1M8.5 1.5l-1 1M1.5 8.5l1-1"/></g>',
+      dark:   '<path d="M7.5 6.2A3.6 3.6 0 1 1 4.2 1.6 2.9 2.9 0 0 0 7.5 6.2z" fill="currentColor"/>',
+    };
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+
+    function currentTheme() {
+      try { return localStorage.getItem('theme') || 'system'; } catch (e) { return 'system'; }
+    }
+    function applyTheme(t) {
+      if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+      else document.documentElement.removeAttribute('data-theme');
+      $('theme-glyph').innerHTML = GLYPHS[t];
+      $('theme-label').textContent = t.charAt(0).toUpperCase() + t.slice(1);
+      $('theme-toggle').setAttribute('aria-label', 'Theme: ' + t + '. Click to change.');
+      if (window.PLAYER) window.PLAYER.refreshTheme();
+      drawNetgraph();
+    }
+    function setTheme(t) {
+      try { localStorage.setItem('theme', t); } catch (e) {}
+      applyTheme(t);
+    }
+    $('theme-toggle').addEventListener('click', () => {
+      const next = THEMES[(THEMES.indexOf(currentTheme()) + 1) % THEMES.length];
+      setTheme(next);
+    });
+    // When following the OS and it flips, recolor the JS-drawn layers.
+    mq.addEventListener('change', () => {
+      if (currentTheme() === 'system') { if (window.PLAYER) window.PLAYER.refreshTheme(); drawNetgraph(); }
+    });
+
     // ── Init ──────────────────────────────────────────────────────────────────
+    applyTheme(currentTheme());
     drawNetgraph();
     renderHoldings();
     select(CATALOGUE[0].no);
