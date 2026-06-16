@@ -1,150 +1,444 @@
 <!DOCTYPE html>
-<html lang="en" data-mode="tonsure">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>2240</title>
-  <link rel="stylesheet" href="css/base.css">
-  <link rel="stylesheet" href="css/themes.css">
+  <meta name="description" content="2240 — a sound archive by Toby Brown and Tonsure. Full archive in preparation.">
+  <title>2240 — Sound Archive</title>
   <style>
-    body { display: flex; flex-direction: column; }
-
-    .feature {
-      flex: 1; display: flex; flex-direction: column;
-      justify-content: center; padding: 0 36px;
-      position: relative; z-index: 10;
-    }
-    .feature-eyebrow {
-      font-size: 8px; letter-spacing: 0.3em; text-transform: uppercase;
-      color: var(--meta); margin-bottom: 16px;
-    }
-    .feature-title {
-      font-size: clamp(36px, 6vw, 80px); font-weight: bold;
-      letter-spacing: -0.03em; line-height: 0.95;
-      color: var(--fg); margin-bottom: 16px; max-width: 700px;
-    }
-    .feature-artist {
-      font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
-      color: var(--meta);
+    /* ══════════════════════════════════════════════════════════════
+       2240 — placeholder. Avant-garde archival / file-system record.
+       Self-contained: inline styles + js/player.js (streaming engine).
+       ══════════════════════════════════════════════════════════════ */
+    :root {
+      --bg:       #0a0a0a;
+      --fg:       #efefef;
+      --fg-dim:   rgba(239,239,239,0.45);
+      --fg-faint: rgba(239,239,239,0.20);
+      --rule:     rgba(239,239,239,0.13);
+      --grid:     rgba(239,239,239,0.035);
+      --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, "Liberation Mono", monospace;
     }
 
-    /* waveform */
-    .waveform-wrap {
-      position: relative; width: 100%; height: 140px;
-      cursor: crosshair; flex-shrink: 0;
+    * , *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-font-smoothing: antialiased; }
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--mono);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow-x: hidden;
     }
+
+    /* ── Background: faint coordinate grid + node-graph plot ───────── */
+    .backdrop {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(var(--grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+      background-size: 46px 46px;
+    }
+    #netgraph { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.5; }
+
+    /* ── Registration marks ───────────────────────────────────────── */
+    .reg { position: fixed; width: 9px; height: 9px; z-index: 4; pointer-events: none; }
+    .reg::before, .reg::after { content:''; position:absolute; background: var(--fg-faint); }
+    .reg::before { left: 4px; top: 0; width: 1px; height: 9px; }
+    .reg::after  { top: 4px; left: 0; width: 9px; height: 1px; }
+    .reg-tl { top: 14px; left: 14px; } .reg-tr { top: 14px; right: 14px; }
+    .reg-bl { bottom: 14px; left: 14px; } .reg-br { bottom: 14px; right: 14px; }
+
+    /* ── Layout shell ─────────────────────────────────────────────── */
+    .shell { position: relative; z-index: 2; flex: 1; width: 100%;
+             max-width: 880px; margin: 0 auto; padding: 0 30px;
+             display: flex; flex-direction: column; }
+
+    /* ── Top bar ──────────────────────────────────────────────────── */
+    .topbar { display: flex; align-items: baseline; justify-content: space-between;
+              padding: 30px 0 0; }
+    .wordmark { font-size: 22px; font-weight: 700; letter-spacing: 0.02em; }
+    .topbar-meta { font-size: 9px; letter-spacing: 0.22em; text-transform: uppercase;
+                   color: var(--fg-dim); text-align: right; line-height: 1.8; }
+
+    /* ── Status strip ─────────────────────────────────────────────── */
+    .statusbar { display: flex; align-items: center; gap: 12px;
+                 margin-top: 22px; padding: 9px 0; border-top: 1px solid var(--rule);
+                 border-bottom: 1px solid var(--rule);
+                 font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase;
+                 color: var(--fg-dim); }
+    .statusbar .blink { width: 6px; height: 6px; background: var(--fg);
+                        animation: blink 1.6s step-end infinite; flex-shrink: 0; }
+    @keyframes blink { 0%,55% { opacity: 1; } 56%,100% { opacity: 0.15; } }
+    .statusbar .spacer { flex: 1; }
+
+    /* ── Record (focal release) ───────────────────────────────────── */
+    .record { padding: 40px 0 8px; }
+    .rec-eyebrow { font-size: 9px; letter-spacing: 0.26em; text-transform: uppercase;
+                   color: var(--fg-dim); display: flex; align-items: center; gap: 12px; }
+    .flag { background: var(--fg); color: var(--bg); padding: 2px 6px;
+            letter-spacing: 0.16em; font-weight: 700; }
+    .rec-title { font-size: clamp(38px, 7vw, 78px); font-weight: 700;
+                 letter-spacing: -0.03em; line-height: 0.96; margin: 16px 0 10px; }
+    .rec-artist { font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+                  color: var(--fg-dim); }
+
+    /* ── Waveform + transport ─────────────────────────────────────── */
+    .player { margin-top: 30px; }
+    .waveform-wrap { position: relative; width: 100%; height: 96px; cursor: crosshair; }
     #waveform { display: block; width: 100%; height: 100%; }
-
-    .playhead {
-      position: absolute; top: 0; left: 50%;
-      width: 1px; height: 100%;
-      background: rgba(239,239,239,0.55);
-      transform: translateX(-0.5px); pointer-events: none;
-    }
-    .wf-fade {
-      position: absolute; top: 0; width: 100px; height: 100%;
-      pointer-events: none; z-index: 2;
-    }
-    .wf-fade-l { left:  0; background: linear-gradient(to right, var(--bg) 0%, transparent 100%); }
+    .playhead { position: absolute; top: 0; left: 50%; width: 1px; height: 100%;
+                background: rgba(239,239,239,0.5); transform: translateX(-0.5px);
+                pointer-events: none; }
+    .wf-fade { position: absolute; top: 0; width: 80px; height: 100%;
+               pointer-events: none; z-index: 2; }
+    .wf-fade-l { left: 0;  background: linear-gradient(to right, var(--bg) 0%, transparent 100%); }
     .wf-fade-r { right: 0; background: linear-gradient(to left,  var(--bg) 0%, transparent 100%); }
 
-    /* transport */
-    .transport {
-      display: flex; align-items: center; gap: 20px;
-      padding: 14px 36px; position: relative; z-index: 10; flex-shrink: 0;
-    }
-
-    .play-btn {
-      width: 36px; height: 36px; border-radius: 50%;
-      border: 1px solid rgba(239,239,239,0.25); background: none;
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-      flex-shrink: 0; transition: border-color 0.2s, background 0.2s;
-    }
-    .play-btn:hover { border-color: rgba(239,239,239,0.6); }
-
-    .icon-play {
-      width: 0; height: 0; border-style: solid;
-      border-width: 6px 0 6px 10px;
-      border-color: transparent transparent transparent rgba(239,239,239,0.8);
-      margin-left: 2px;
-    }
+    .transport { display: flex; align-items: center; gap: 18px; padding: 16px 0; }
+    .play-btn { width: 38px; height: 38px; border-radius: 50%;
+                border: 1px solid rgba(239,239,239,0.3); background: none; cursor: pointer;
+                display: flex; align-items: center; justify-content: center;
+                flex-shrink: 0; transition: border-color 0.2s; }
+    .play-btn:hover { border-color: rgba(239,239,239,0.7); }
+    .icon-play { width: 0; height: 0; border-style: solid; border-width: 6px 0 6px 10px;
+                 border-color: transparent transparent transparent rgba(239,239,239,0.85);
+                 margin-left: 2px; }
     .icon-pause { display: none; gap: 3px; align-items: center; }
-    .icon-pause span {
-      display: block; width: 3px; height: 12px;
-      background: rgba(239,239,239,0.8); border-radius: 1px;
-    }
-    .play-btn.playing .icon-play  { display: none; }
+    .icon-pause span { display: block; width: 3px; height: 13px;
+                       background: rgba(239,239,239,0.85); }
+    .play-btn.playing .icon-play { display: none; }
     .play-btn.playing .icon-pause { display: flex; }
+    .time-display { font-size: 10px; letter-spacing: 0.08em; color: var(--fg-dim);
+                    font-variant-numeric: tabular-nums; }
+    #time-current { color: var(--fg); }
 
-    .time-display {
-      font-size: 9px; letter-spacing: 0.1em;
-      color: var(--meta); font-variant-numeric: tabular-nums;
-    }
-    #time-current { color: var(--fg); opacity: 0.7; }
+    /* ── Metadata field table ─────────────────────────────────────── */
+    .fields { margin-top: 18px; border-top: 1px solid var(--rule); }
+    .field { display: grid; grid-template-columns: 150px 1fr; gap: 16px;
+             padding: 9px 0; border-bottom: 1px solid var(--rule);
+             font-size: 11px; letter-spacing: 0.04em; }
+    .field dt { color: var(--fg-faint); text-transform: uppercase; letter-spacing: 0.16em;
+                font-size: 9px; align-self: center; }
+    .field dd { color: var(--fg); font-variant-numeric: tabular-nums; }
 
-    .stream-links { margin-left: auto; display: flex; gap: 18px; }
-    .stream-link {
-      font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase;
-      color: var(--meta); text-decoration: none; transition: color 0.2s;
-    }
-    .stream-link:hover { color: var(--fg); }
+    /* ── Actions ──────────────────────────────────────────────────── */
+    .actions { margin-top: 30px; display: flex; flex-wrap: wrap; gap: 10px;
+               align-items: stretch; }
+    .btn { font-family: var(--mono); font-size: 10px; letter-spacing: 0.16em;
+           text-transform: uppercase; text-decoration: none; cursor: pointer;
+           display: inline-flex; align-items: center; gap: 9px;
+           padding: 13px 18px; border: 1px solid var(--rule); background: none;
+           color: var(--fg-dim); transition: color 0.15s, border-color 0.15s, background 0.15s; }
+    .btn:hover { color: var(--fg); border-color: var(--fg-dim); }
+    .btn .dot { width: 5px; height: 5px; border-radius: 50%;
+                border: 1px solid currentColor; flex-shrink: 0; }
+    .btn-download { background: var(--fg); color: var(--bg); border-color: var(--fg);
+                    font-weight: 700; margin-left: auto; }
+    .btn-download:hover { background: rgba(239,239,239,0.85); color: var(--bg);
+                          border-color: rgba(239,239,239,0.85); }
+    .btn-download .arrow { font-size: 12px; }
+    .btn[aria-disabled="true"] { opacity: 0.4; pointer-events: none; }
 
-    .foot a {
-      font-size: 8px; letter-spacing: 0.18em; text-transform: uppercase;
-      color: var(--meta); text-decoration: none; transition: color 0.2s;
-    }
+    /* ── Holdings (other records) ─────────────────────────────────── */
+    .holdings { margin-top: 56px; }
+    .holdings-label { font-size: 9px; letter-spacing: 0.24em; text-transform: uppercase;
+                      color: var(--fg-faint); padding-bottom: 10px;
+                      border-bottom: 1px solid var(--rule); }
+    .hrow { display: grid; grid-template-columns: 70px 1fr 130px 56px 70px;
+            align-items: center; gap: 14px; padding: 14px 4px; cursor: pointer;
+            border-bottom: 1px solid var(--rule);
+            opacity: 0.55; transition: opacity 0.18s, background 0.18s; }
+    .hrow:hover { opacity: 1; background: rgba(239,239,239,0.025); }
+    .hrow.active { opacity: 1; }
+    .hrow.active .h-no { color: var(--fg); }
+    .h-no { font-size: 10px; color: var(--fg-faint); font-variant-numeric: tabular-nums; }
+    .h-title { font-size: 15px; font-weight: 700; letter-spacing: -0.01em; }
+    .h-artist, .h-year { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase;
+                         color: var(--fg-dim); }
+    .h-load { font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+              color: var(--fg-dim); text-align: right; }
+    .hrow.active .h-load { color: var(--fg); }
+    .hrow:focus-visible { outline: 1px solid var(--fg-dim); outline-offset: 2px; }
+
+    /* ── Footer ───────────────────────────────────────────────────── */
+    .foot { position: relative; z-index: 2; max-width: 880px; margin: 60px auto 0;
+            width: 100%; padding: 18px 30px 28px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-top: 1px solid var(--rule);
+            font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase;
+            color: var(--fg-faint); }
+    .foot a { color: var(--fg-dim); text-decoration: none; }
     .foot a:hover { color: var(--fg); }
+
+    @media (max-width: 560px) {
+      .topbar-meta { font-size: 8px; }
+      .field { grid-template-columns: 110px 1fr; }
+      .hrow { grid-template-columns: 50px 1fr 64px; }
+      .h-artist, .h-load { display: none; }
+      .btn-download { margin-left: 0; width: 100%; justify-content: center; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .statusbar .blink { animation: none; }
+    }
   </style>
 </head>
 <body>
-  <div class="topbar">
-    <a href="/" class="wordmark">2240</a>
-    <nav>
-      <a href="/" class="active">Home</a>
-      <a href="/releases.html">Releases</a>
-      <a href="/contact.html">Contact</a>
-    </nav>
-  </div>
+  <div class="backdrop"></div>
+  <svg id="netgraph" preserveAspectRatio="none" aria-hidden="true"></svg>
+  <div class="reg reg-tl"></div><div class="reg reg-tr"></div>
+  <div class="reg reg-bl"></div><div class="reg reg-br"></div>
 
-  <div class="feature">
-    <p class="feature-eyebrow">New release · Tonsure · Single · 2026</p>
-    <h1 class="feature-title">You Are The Man</h1>
-    <p class="feature-artist">Tonsure — Ambient / New Age</p>
-  </div>
+  <div class="shell">
+    <header class="topbar">
+      <a href="/" class="wordmark">2240</a>
+      <div class="topbar-meta">
+        Sound Archive<br>Est. 2026 · Holdings 002
+      </div>
+    </header>
 
-  <div class="waveform-wrap" id="waveform-wrap">
-    <canvas id="waveform"
-            role="img"
-            aria-label="Audio waveform for You Are The Man by Tonsure. Click to seek.">
-      Audio waveform visualization
-    </canvas>
-    <div class="playhead"></div>
-    <div class="wf-fade wf-fade-l"></div>
-    <div class="wf-fade wf-fade-r"></div>
-  </div>
-
-  <div class="transport">
-    <button type="button" class="play-btn" id="play-btn"
-            aria-label="Play You Are The Man by Tonsure"
-            onclick="window.PLAYER && window.PLAYER.togglePlay()">
-      <div class="icon-play"></div>
-      <div class="icon-pause"><span></span><span></span></div>
-    </button>
-    <div class="time-display">
-      <span id="time-current">0:00</span><span id="time-total"> / —:——</span>
+    <div class="statusbar" role="status">
+      <span class="blink" aria-hidden="true"></span>
+      <span>Archive in preparation</span>
+      <span class="spacer"></span>
+      <span>Preview access</span>
     </div>
-    <div class="stream-links">
-      <a href="YOUR_SPOTIFY_URL"  target="_blank" rel="noopener" class="stream-link" aria-label="Listen on Spotify (opens in new tab)">Spotify</a>
-      <a href="YOUR_APPLE_URL"    target="_blank" rel="noopener" class="stream-link" aria-label="Listen on Apple Music (opens in new tab)">Apple Music</a>
-      <a href="YOUR_BANDCAMP_URL" target="_blank" rel="noopener" class="stream-link" aria-label="Listen on Bandcamp (opens in new tab)">Bandcamp</a>
-    </div>
+
+    <main>
+      <!-- Focal record -->
+      <section class="record" aria-label="Featured release">
+        <p class="rec-eyebrow">
+          <span id="rec-cat">REC ▸ 2240-001</span>
+          <span class="flag" id="rec-flag">NEW</span>
+          <span id="rec-class">SINGLE · 2026</span>
+        </p>
+        <h1 class="rec-title" id="rec-title">You Are The Man</h1>
+        <p class="rec-artist" id="rec-artist">Tonsure</p>
+
+        <div class="player">
+          <div class="waveform-wrap">
+            <canvas id="waveform" role="img" aria-label="Audio waveform. Click to seek.">Audio waveform</canvas>
+            <div class="playhead"></div>
+            <div class="wf-fade wf-fade-l"></div>
+            <div class="wf-fade wf-fade-r"></div>
+          </div>
+          <div class="transport">
+            <button type="button" class="play-btn" id="play-btn" aria-label="Play"
+                    onclick="window.PLAYER && window.PLAYER.togglePlay()">
+              <span class="icon-play"></span>
+              <span class="icon-pause"><span></span><span></span></span>
+            </button>
+            <div class="time-display"><span id="time-current">0:00</span><span id="time-total"> / —:——</span></div>
+          </div>
+        </div>
+
+        <dl class="fields">
+          <div class="field"><dt>Catalogue</dt><dd id="f-cat">2240-001</dd></div>
+          <div class="field"><dt>Artist</dt><dd id="f-artist">Tonsure</dd></div>
+          <div class="field"><dt>Format</dt><dd id="f-format">Lossless WAV</dd></div>
+          <div class="field"><dt>Duration</dt><dd id="f-dur">—:——</dd></div>
+          <div class="field"><dt>Year</dt><dd id="f-year">2026</dd></div>
+        </dl>
+
+        <div class="actions" id="actions">
+          <!-- stream links + download injected by script -->
+        </div>
+      </section>
+
+      <!-- Holdings index -->
+      <section class="holdings" aria-label="Archive holdings">
+        <div class="holdings-label">Holdings — select to load</div>
+        <div id="holdings-body"></div>
+      </section>
+    </main>
   </div>
 
-  <div class="foot">
-    <span class="foot-copy">© 2026 2240</span>
-    <a href="/releases.html">All releases →</a>
-  </div>
+  <footer class="foot">
+    <span>© 2026 2240</span>
+    <span><a href="mailto:hello@2240.us">hello@2240.us</a></span>
+  </footer>
 
-  <script type="module" src="js/player.js"></script>
+  <!-- Streaming-waveform engine (ported from dev: streaming playback + precomputed peaks) -->
+  <script src="js/player.js"></script>
+  <script>
+  (function () {
+    // ── Catalogue (placeholder) ───────────────────────────────────────────────
+    // Streaming links are placeholders ('#') — fill in before going live.
+    const CATALOGUE = [
+      {
+        no: '2240-001', title: 'You Are The Man', artist: 'Tonsure',
+        kind: 'Single', year: 2026, isNew: true, format: 'Lossless WAV',
+        audio: 'https://tb-sounds.2240.us/You%20Are%20The%20Man.wav',
+        peaks: 'audio/peaks/tonsure.json',
+        download: 'You Are The Man — Tonsure (2240-001).wav',
+        links: { 'Spotify': '#', 'Apple Music': '#', 'Bandcamp': '#' },
+      },
+      {
+        no: '2240-002', title: 'Washboard', artist: 'Toby Brown',
+        kind: 'Single', year: 2026, isNew: false, format: 'Lossless WAV · 24-bit / 48 kHz',
+        audio: 'https://tb-sounds.2240.us/Washboard_MSTR_2448.wav',
+        peaks: 'audio/peaks/washboard.json',
+        download: 'Washboard — Toby Brown (2240-002).wav',
+        links: { 'Spotify': '#', 'Apple Music': '#', 'Bandcamp': '#' },
+      },
+    ];
+
+    let activeNo = null;
+    const $ = (id) => document.getElementById(id);
+    const entry = (no) => CATALOGUE.find(r => r.no === no);
+
+    // ── Download (force save-to-computer; falls back to new tab if blocked) ────
+    async function download(rec, btn) {
+      const label = btn.querySelector('.label');
+      const original = label.textContent;
+      label.textContent = 'Preparing…';
+      btn.setAttribute('aria-disabled', 'true');
+      try {
+        const res = await fetch(rec.audio);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = rec.download;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 4000);
+      } catch (err) {
+        // CORS/network fallback: open the file directly so the user can still save it.
+        console.warn('[download] blob fetch failed, opening directly:', err.message);
+        window.open(rec.audio, '_blank', 'noopener');
+      } finally {
+        label.textContent = original;
+        btn.removeAttribute('aria-disabled');
+      }
+    }
+
+    function renderActions(rec) {
+      const wrap = $('actions');
+      wrap.innerHTML = '';
+      Object.entries(rec.links).forEach(([name, url]) => {
+        const a = document.createElement('a');
+        a.className = 'btn';
+        a.href = url;
+        if (url && url !== '#') { a.target = '_blank'; a.rel = 'noopener'; }
+        a.setAttribute('aria-label', 'Listen on ' + name);
+        a.innerHTML = '<span class="dot"></span><span class="label">' + name + '</span>';
+        wrap.appendChild(a);
+      });
+      const dl = document.createElement('button');
+      dl.type = 'button';
+      dl.className = 'btn btn-download';
+      dl.setAttribute('aria-label', 'Download lossless WAV — free');
+      dl.innerHTML = '<span class="arrow">↓</span><span class="label">Download · WAV · Free</span>';
+      dl.addEventListener('click', () => download(rec, dl));
+      wrap.appendChild(dl);
+    }
+
+    function renderHoldings() {
+      const body = $('holdings-body');
+      body.innerHTML = CATALOGUE.map(r => `
+        <div class="hrow" id="h-${r.no}" role="button" tabindex="0"
+             aria-label="Load ${r.title} by ${r.artist}">
+          <span class="h-no">${r.no}</span>
+          <span class="h-title">${r.title}</span>
+          <span class="h-artist">${r.artist}</span>
+          <span class="h-year">${r.year}</span>
+          <span class="h-load">▸ Load</span>
+        </div>`).join('');
+      body.querySelectorAll('.hrow').forEach(row => {
+        const no = row.id.slice(2);
+        const act = () => select(no);
+        row.addEventListener('click', act);
+        row.addEventListener('keydown', e => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); act(); }
+        });
+      });
+    }
+
+    function select(no) {
+      const r = entry(no);
+      if (!r || no === activeNo) return;
+      activeNo = no;
+
+      $('rec-cat').textContent   = 'REC ▸ ' + r.no;
+      $('rec-flag').style.display = r.isNew ? '' : 'none';
+      $('rec-class').textContent = r.kind.toUpperCase() + ' · ' + r.year;
+      $('rec-title').textContent = r.title;
+      $('rec-artist').textContent = r.artist;
+      $('f-cat').textContent    = r.no;
+      $('f-artist').textContent = r.artist;
+      $('f-format').textContent = r.format;
+      $('f-year').textContent   = r.year;
+      $('f-dur').textContent    = '—:——';
+      $('waveform').setAttribute('aria-label',
+        'Audio waveform for ' + r.title + ' by ' + r.artist + '. Click to seek.');
+      $('play-btn').setAttribute('aria-label', 'Play ' + r.title + ' by ' + r.artist);
+
+      renderActions(r);
+      document.querySelectorAll('.hrow')
+        .forEach(row => row.classList.toggle('active', row.id === 'h-' + no));
+
+      if (window.PLAYER) window.PLAYER.loadNewAudio(r.audio, r.peaks);
+    }
+
+    // Mirror the live duration from the player into the metadata field.
+    const audioEl = document.querySelector('audio');
+    // player.js owns the <audio>; observe time-total text instead.
+    const tt = $('time-total');
+    new MutationObserver(() => {
+      const m = tt.textContent.match(/(\d+:\d{2})/);
+      if (m) $('f-dur').textContent = m[1];
+    }).observe(tt, { childList: true, characterData: true, subtree: true });
+
+    // ── Background node-graph plot ────────────────────────────────────────────
+    function drawNetgraph() {
+      const svg = $('netgraph');
+      const W = window.innerWidth, H = window.innerHeight;
+      svg.setAttribute('viewBox', `0 0 ${W} ${H}`);
+      const NS = 'http://www.w3.org/2000/svg';
+      svg.innerHTML = '';
+      // deterministic pseudo-random
+      let s = 2240;
+      const rnd = () => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+      const pts = [];
+      const N = Math.max(16, Math.round((W * H) / 52000));
+      for (let i = 0; i < N; i++) pts.push({ x: rnd() * W, y: rnd() * H, r: 1 + rnd() * 1.6 });
+      // edges: connect each point to nearest couple
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i];
+        const near = pts
+          .map((b, j) => ({ j, d: (a.x - b.x) ** 2 + (a.y - b.y) ** 2 }))
+          .filter(o => o.j !== i).sort((u, v) => u.d - v.d).slice(0, 2);
+        near.forEach(o => {
+          if (o.j > i) {
+            const b = pts[o.j];
+            const ln = document.createElementNS(NS, 'line');
+            ln.setAttribute('x1', a.x); ln.setAttribute('y1', a.y);
+            ln.setAttribute('x2', b.x); ln.setAttribute('y2', b.y);
+            ln.setAttribute('stroke', 'rgba(239,239,239,0.06)');
+            ln.setAttribute('stroke-width', '1');
+            svg.appendChild(ln);
+          }
+        });
+      }
+      pts.forEach(p => {
+        const c = document.createElementNS(NS, 'circle');
+        c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', p.r);
+        c.setAttribute('fill', 'rgba(239,239,239,0.10)');
+        svg.appendChild(c);
+      });
+    }
+    let rzTimer = null;
+    window.addEventListener('resize', () => {
+      clearTimeout(rzTimer); rzTimer = setTimeout(drawNetgraph, 150);
+    });
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    drawNetgraph();
+    renderHoldings();
+    select(CATALOGUE[0].no);
+  })();
+  </script>
 </body>
 </html>
