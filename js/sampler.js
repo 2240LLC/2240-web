@@ -117,17 +117,26 @@
     g.clearRect(0, 0, W, H);
     const fg = fgRGB();
     const barW = 2 * dpr;
+    const now = (buffer && voices.length) ? ctx().currentTime : 0;
+    const dur = buffer ? buffer.duration : 1;
+    // Played ranges (fraction 0–1) for each active voice — drives the colour shift.
+    const ranges = (buffer ? voices : []).map(v => {
+      const a = v.loopStart / dur, b = Math.min(voicePos(v, now) / dur, 1);
+      return [Math.min(a, b), Math.max(a, b)];
+    });
     bars.forEach((p, i) => {
+      const frac = (i * barW + barW * 0.5) / W;
+      const played = ranges.some(r => frac >= r[0] && frac <= r[1]);
+      const a = played ? (0.55 + p * 0.4) : (0.16 + p * 0.32);
       const bh = Math.max(dpr, p * H * 0.82);
-      g.fillStyle = `rgba(${fg},${(0.26 + p * 0.5).toFixed(2)})`;
+      g.fillStyle = `rgba(${fg},${a.toFixed(2)})`;
       g.fillRect(i * barW, (H - bh) / 2, dpr, bh);
     });
     if (buffer && voices.length) {
-      const now = ctx().currentTime;
       voices.forEach(v => {
-        const frac = Math.max(0, Math.min(voicePos(v, now) / buffer.duration, 1));
+        const frac = Math.max(0, Math.min(voicePos(v, now) / dur, 1));
         const x = Math.round(frac * W);
-        g.fillStyle = `rgba(${fg},0.9)`;
+        g.fillStyle = `rgba(${fg},0.95)`;
         g.fillRect(x - Math.ceil(dpr / 2), 0, Math.max(1, Math.round(dpr)), H);
       });
     }
@@ -172,6 +181,12 @@
   // ── Controls ────────────────────────────────────────────────────────────────
   function fmtSemis(n) { return (n > 0 ? '+' : '') + n + ' st'; }
   function wireControls() {
+    const tog = document.getElementById('sam-toggle');
+    if (tog) tog.addEventListener('click', () => {
+      const open = section.classList.toggle('open');
+      tog.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if (open) setTimeout(computeBars, 60);   // size canvas once the panel is shown
+    });
     document.getElementById('sam-source').addEventListener('change', async (e) => {
       activeId = e.target.value; stopAll();
       await load(activeId); setLcd();
