@@ -21,10 +21,14 @@
   let latch = true;               // default trigger mode: latch (toggle)
   let out = null;
   let bars = [];
+  let isDragging = false;
 
   const nowt = () => Tone.getContext().currentTime;
   const ensureOut = () => (out || (out = new Tone.Gain(volume).toDestination()));
   const stretch = () => (cur && cur.bpm ? masterBPM / cur.bpm : 1);
+  const clamp01 = x => Math.max(0, Math.min(x, 1));
+  const gridSec = () => (cur && cur.bpm ? 60 / cur.bpm : null);
+  const snap = (t) => { const g = gridSec(), dur = cur.audioBuffer.duration; const v = g ? Math.round(t / g) * g : t; return Math.max(0, Math.min(v, dur)); };
 
   // ── BPM detection (onset-envelope autocorrelation) ──────────────────────────
   function detectBPM(buf) {
@@ -150,6 +154,21 @@
       g.fillStyle = `rgba(${fg},${a.toFixed(2)})`;
       g.fillRect(i * barW, (H - bh) / 2, dpr, bh);
     });
+    if (isDragging && cur && cur.bpm) {
+      const gs = 60 / cur.bpm;
+      for (let t = 0, k = 0; t <= dur + 1e-6; t += gs, k++) {
+        const gx = Math.round(t / dur * W);
+        g.fillStyle = `rgba(${fg},${k % 4 === 0 ? 0.16 : 0.06})`;
+        g.fillRect(gx, 0, 1, H);
+      }
+    }
+    if (cur) voices.forEach(v => {
+      const x1 = Math.round(v.loopStart / dur * W), x2 = Math.round(v.loopEnd / dur * W);
+      g.fillStyle = `rgba(${fg},0.07)`; g.fillRect(x1, 0, x2 - x1, H);
+      g.fillStyle = `rgba(${fg},0.45)`;
+      g.fillRect(x1, 0, Math.max(1, dpr), H);
+      g.fillRect(x2 - Math.max(1, dpr), 0, Math.max(1, dpr), H);
+    });
     if (cur && voices.length) voices.forEach(v => {
       const x = Math.round(Math.max(0, Math.min(voicePos(v, now) / dur, 1)) * W);
       g.fillStyle = `rgba(${fg},0.95)`;
@@ -172,26 +191,46 @@
   // ── Slice interaction ───────────────────────────────────────────────────────
   function wireSlice() {
     const wrap = document.getElementById('sam-wave-wrap');
+    let drag = null; const THRESH = 0.008;
+    const fracAt = (e) => { const r = wrap.getBoundingClientRect(); return clamp01((e.clientX - r.left) / r.width); };
     wrap.addEventListener('pointerdown', (e) => {
       if (!cur) return;
-      const rect = wrap.getBoundingClientRect();
-      const f = Math.max(0, Math.min((e.clientX - rect.left) / rect.width, 1));
-      const dur = cur.audioBuffer.duration;
-      const startSec = f * dur;
-      if (latch) {
-        // Toggle: click near an existing latched loop's start stops it; otherwise start one.
-        const near = voices.find(v => Math.abs(v.loopStart / dur - f) < 0.02);
-        if (near) { stopVoice(near); renderWave(); }
-        else { trigger(startSec, dur - startSec, { loop: true }); }
-      } else {
-        const v = trigger(startSec, dur - startSec, { loop: true });
-        if (v) {
-          const uph = () => { stopVoice(v); renderWave(); window.removeEventListener('pointerup', uph); };
-          window.addEventListener('pointerup', uph);
-        }
+      const dur = cur.audioBuffer.duration, f = fracAt(e), t = snap(f * dur);
+      let toggle = null;
+      if (latch) toggle = voices.find(v => f * dur >= v.loopStart && f * dur <= v.loopEnd) || null;
+      let voice = null;
+      if (!toggle) {
+        const g = gridSec(), len = g ? Math.min(4 * g, dur - t) : (dur - t);
+        const en = Math.min(t + Math.max(len, g || 0.05), dur);
+        const sc = Math.min(t, Math.max(0, en - (g || 0.05)));
+        voice = trigger(sc, en - sc, { loop: true });
       }
+      drag = { anchor: t, voice, toggle, moved: false, downF: f };
+      isDragging = true;
+      try { wrap.setPointerCapture(e.pointerId); } catch (_) {}
       e.preventDefault();
     });
+    wrap.addEventListener('pointermove', (e) => {
+      if (!drag || !cur) return;
+      const dur = cur.audioBuffer.duration, f = fracAt(e);
+      if (Math.abs(f - drag.downF) > THRESH) drag.moved = true;
+      if (!drag.moved) return;
+      if (!drag.voice) { drag.toggle = null; drag.voice = trigger(drag.anchor, gridSec() || 0.05, { loop: true }); }
+      const g = gridSec() || 0.05, t2 = snap(f * dur);
+      let sc = Math.min(drag.anchor, t2), en = Math.max(drag.anchor, t2);
+      if (en - sc < g) en = Math.min(sc + g, dur);
+      drag.voice.loopStart = sc; drag.voice.loopEnd = en;
+      drag.voice.gp.loopStart = sc; drag.voice.gp.loopEnd = en;
+      renderWave();
+    });
+    const end = () => {
+      if (!drag) return;
+      if (drag.toggle && !drag.moved) stopVoice(drag.toggle);
+      else if (!latch && drag.voice) stopVoice(drag.voice);
+      drag = null; isDragging = false; renderWave();
+    };
+    wrap.addEventListener('pointerup', end);
+    wrap.addEventListener('pointercancel', end);
   }
 
   // ── Controls ────────────────────────────────────────────────────────────────
