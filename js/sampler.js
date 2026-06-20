@@ -18,7 +18,8 @@
   const cache = new Map();
   let cur = null;
   let activeId = SOURCES[0].id;
-  let semis = 0, volume = 1.0, masterBPM = 120;
+  let volume = 1.0, masterBPM = 120;
+  const manualSemis = {};   // per-source manual transpose (semitones)
   let masterKey = null;
   let keyMatch = true, quantize = true, quantGrid = '4n';
   let latch = true, isDragging = false;
@@ -38,7 +39,7 @@
   const rateFor = (bpm) => (bpm ? masterBPM / bpm : 1);
   const timeAt = (f) => viewStart + f * (viewEnd - viewStart);
   function keyShift(pc) { if (!keyMatch || pc == null || masterKey == null) return 0; let d = (masterKey - pc) % 12; if (d > 6) d -= 12; if (d < -5) d += 12; return d; }
-  const detuneFor = (pc) => (keyShift(pc) + semis) * 100;
+  const voiceDetune = (v) => (keyShift(v.keyPc) + (manualSemis[v.srcId] || 0)) * 100;
 
   function resetView() { viewStart = 0; viewEnd = cur ? cur.audioBuffer.duration : 1; }
   function clampView() {
@@ -165,7 +166,7 @@
     voices.forEach(v => {
       const nr = rateFor(v.bpm);
       if (now >= v.t0) { v.posAtT0 = voicePos(v, now); v.t0 = now; }
-      v.rate = nr; v.gp.playbackRate = nr; v.gp.detune = detuneFor(v.keyPc);
+      v.rate = nr; v.gp.playbackRate = nr; v.gp.detune = voiceDetune(v);
     });
   }
   // Anchor the master clock/key to the current source; existing layers re-conform.
@@ -185,7 +186,7 @@
     const r = rateFor(cur.bpm);
     const gp = new Tone.GrainPlayer(cur.tb);
     gp.loop = !!opts.loop; gp.loopStart = startSec; gp.loopEnd = startSec + durSec;
-    gp.playbackRate = r; gp.detune = detuneFor(cur.keyPc);
+    gp.playbackRate = r; gp.detune = (keyShift(cur.keyPc) + (manualSemis[activeId] || 0)) * 100;
     gp.grainSize = 0.1; gp.overlap = 0.05;
     gp.connect(ensureOut());
     let t0;
@@ -372,13 +373,18 @@
     });
     document.getElementById('sam-source').addEventListener('change', async (e) => {
       activeId = e.target.value;
-      await load(activeId); setLcd(); renderWave();
+      await load(activeId);
+      const pv = manualSemis[activeId] || 0;
+      document.getElementById('sam-pitch').value = pv;
+      document.getElementById('sam-pitch-val').textContent = fmtSemis(pv);
+      setLcd(); renderWave();
     });
     const pe = document.getElementById('sam-pitch');
     pe.addEventListener('input', () => {
-      semis = parseInt(pe.value, 10);
-      document.getElementById('sam-pitch-val').textContent = fmtSemis(semis);
-      voices.forEach(v => { v.gp.detune = detuneFor(v.keyPc); });
+      const val = parseInt(pe.value, 10);
+      manualSemis[activeId] = val;
+      document.getElementById('sam-pitch-val').textContent = fmtSemis(val);
+      voices.forEach(v => { if (v.srcId === activeId) v.gp.detune = voiceDetune(v); });
     });
     const ve = document.getElementById('sam-vol');
     ve.addEventListener('input', () => {
@@ -398,7 +404,7 @@
     if (km) km.addEventListener('click', () => {
       keyMatch = !keyMatch;
       km.classList.toggle('active', keyMatch); km.setAttribute('aria-pressed', keyMatch ? 'true' : 'false');
-      voices.forEach(v => { v.gp.detune = detuneFor(v.keyPc); });
+      voices.forEach(v => { v.gp.detune = voiceDetune(v); });
     });
     const qz = document.getElementById('sam-quant');
     if (qz) qz.addEventListener('click', () => {
