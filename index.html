@@ -223,7 +223,11 @@
     .sam-seg:hover:not(.active) { color: var(--fg); }
     .sam-wave-wrap { position: relative; width: 100%; height: 116px; cursor: crosshair; border: 1px solid var(--rule); }
     #sam-wave { display: block; width: 100%; height: 100%; }
-    .sam-controls { display: flex; flex-wrap: wrap; gap: 28px; margin-top: 14px; }
+    .sam-controls { display: flex; flex-wrap: wrap; gap: 16px 0; margin-top: 16px; align-items: center; }
+    .sam-group { display: flex; align-items: center; gap: 12px; padding: 0 20px; border-right: 1px solid var(--rule); }
+    .sam-group:first-child { padding-left: 0; }
+    .sam-group:last-child { border-right: none; }
+    .sam-group-label { font-family: var(--mono); font-size: 8px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fg-faint); }
     .sam-ctl { display: flex; align-items: center; gap: 10px; font-size: 9px; letter-spacing: 0.16em;
                text-transform: uppercase; color: var(--fg-dim); }
     .sam-ctl input[type=range] { width: 130px; accent-color: var(--fg); }
@@ -392,16 +396,29 @@
           <canvas id="sam-wave" role="img" aria-label="Sample waveform — click to trigger, hold to loop"></canvas>
         </div>
         <div class="sam-controls">
-          <label class="sam-ctl"><span>Master BPM</span><input type="number" id="sam-bpm" class="sam-num" min="40" max="240" step="1" value="120" aria-label="Master BPM"></label>
-          <button type="button" class="sam-tgl" id="sam-setmaster" title="Set the master tempo &amp; key from the selected source">Set master</button>
-          <button type="button" class="sam-tgl" id="sam-half" title="Halve the grid tempo (fix octave error)">÷2</button>
-          <button type="button" class="sam-tgl" id="sam-double" title="Double the grid tempo (fix octave error)">×2</button>
-          <span class="sam-ctl"><span>Key</span><span id="sam-key" class="sam-ctl-val">—</span></span>
-          <button type="button" class="sam-tgl active" id="sam-keymatch" aria-pressed="true">Key match</button>
-          <button type="button" class="sam-tgl active" id="sam-quant" aria-pressed="true">Quantize</button>
-          <label class="sam-ctl"><span>Grid</span><select id="sam-grid" class="sam-select"><option value="16n">1/16</option><option value="8n">1/8</option><option value="4n" selected>1/4</option><option value="2n">1/2</option><option value="1m">Bar</option></select></label>
-          <label class="sam-ctl"><span>Pitch</span><input type="range" id="sam-pitch" min="-12" max="12" step="1" value="0" aria-label="Pitch in semitones"><span id="sam-pitch-val" class="sam-ctl-val">+0 st</span></label>
-          <label class="sam-ctl"><span>Volume</span><input type="range" id="sam-vol" min="0" max="1" step="0.01" value="1" aria-label="Volume"><span id="sam-vol-val" class="sam-ctl-val">100%</span></label>
+          <div class="sam-group">
+            <span class="sam-group-label">Tempo</span>
+            <span class="sam-ctl"><span>Song</span><span id="sam-songbpm" class="sam-ctl-val">— BPM</span></span>
+            <button type="button" class="sam-tgl" id="sam-half" title="Halve the song's detected tempo (fix octave error)">÷2</button>
+            <button type="button" class="sam-tgl" id="sam-double" title="Double the song's detected tempo (fix octave error)">×2</button>
+            <label class="sam-ctl"><span>Master</span><input type="number" id="sam-bpm" class="sam-num" min="40" max="240" step="1" value="120" aria-label="Master BPM"></label>
+            <button type="button" class="sam-tgl" id="sam-setmaster" title="Set the master tempo &amp; key from the selected song">Set master</button>
+          </div>
+          <div class="sam-group">
+            <span class="sam-group-label">Key</span>
+            <span class="sam-ctl"><span>Master</span><span id="sam-key" class="sam-ctl-val">—</span></span>
+            <button type="button" class="sam-tgl active" id="sam-keymatch" aria-pressed="true">Key match</button>
+            <label class="sam-ctl"><span>Pitch</span><input type="range" id="sam-pitch" min="-12" max="12" step="1" value="0" aria-label="Pitch in semitones"><span id="sam-pitch-val" class="sam-ctl-val">+0 st</span></label>
+          </div>
+          <div class="sam-group">
+            <span class="sam-group-label">Grid</span>
+            <button type="button" class="sam-tgl active" id="sam-quant" aria-pressed="true">Quantize</button>
+            <label class="sam-ctl"><span>Snap</span><select id="sam-grid" class="sam-select"><option value="16n">1/16</option><option value="8n">1/8</option><option value="4n" selected>1/4</option><option value="2n">1/2</option><option value="1m">Bar</option></select></label>
+          </div>
+          <div class="sam-group">
+            <span class="sam-group-label">Mix</span>
+            <label class="sam-ctl"><span>Volume</span><input type="range" id="sam-vol" min="0" max="1" step="0.01" value="1" aria-label="Volume"><span id="sam-vol-val" class="sam-ctl-val">100%</span></label>
+          </div>
         </div>
         <p class="sam-hint">Click drops a loop one grid-step long · drag a loop’s edge to resize, its body to move · click a loop’s × or right-click it to remove · Stop clears all · scroll to zoom · ⇧-click sets the downbeat · ÷2/×2 fix octave</p>
       </div>

@@ -288,6 +288,7 @@
     const el = document.getElementById('sam-lcd'); if (!el) return;
     const src = SOURCES.find(s => s.id === activeId);
     if (msg != null) { el.textContent = msg; return; }
+    const sb = document.getElementById('sam-songbpm'); if (sb) sb.textContent = (cur && cur.bpm ? Math.round(cur.bpm) : '—') + ' BPM';
     const meta = cur ? (' · ' + (cur.bpm ? Math.round(cur.bpm) : '—') + ' BPM · ' + (cur.keyName || '—')) : '';
     el.textContent = 'SLICE · ' + (src ? src.label.toUpperCase() + ' — ' + src.artist : '—') + meta;
   }
