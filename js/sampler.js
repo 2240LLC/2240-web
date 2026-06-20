@@ -30,7 +30,7 @@
   const ensureOut = () => (out || (out = new Tone.Gain(volume).toDestination()));
   const clamp01 = x => Math.max(0, Math.min(x, 1));
   const gridSec = () => (cur && cur.bpm ? 60 / cur.bpm : null);
-  const snap = (t) => { const g = gridSec(), dur = cur.audioBuffer.duration; const v = g ? Math.round(t / g) * g : t; return Math.max(0, Math.min(v, dur)); };
+  const snap = (t) => { const dur = cur.audioBuffer.duration, g = gridSec(); if (!g) return Math.max(0, Math.min(t, dur)); const ph = cur.phase || 0; const v = ph + Math.round((t - ph) / g) * g; return Math.max(0, Math.min(v, dur)); };
   const rateFor = (bpm) => (bpm ? masterBPM / bpm : 1);
   const timeAt = (f) => viewStart + f * (viewEnd - viewStart);
   function keyShift(pc) { if (!keyMatch || pc == null || masterKey == null) return 0; let d = (masterKey - pc) % 12; if (d > 6) d -= 12; if (d < -5) d += 12; return d; }
@@ -76,62 +76,65 @@
     }
   }
 
-  // ── Key detection (chroma + Krumhansl-Schmuckler) ───────────────────────────
-  function detectKey(buf) {
+  // ── Analysis: one STFT pass → tempo (+phase) and key ────────────────────────
+  function analyze(buf) {
     try {
       const sr = buf.sampleRate, data = buf.getChannelData(0);
-      const N = 4096, hop = 4096, lim = Math.min(data.length, sr * 90);
+      const N = 1024, H = Math.max(1, Math.round(sr / 100)), fps = sr / H;
+      const lim = Math.min(data.length, Math.floor(sr * 120));
       const win = new Float64Array(N);
       for (let i = 0; i < N; i++) win[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (N - 1));
-      const chroma = new Float64Array(12), re = new Float64Array(N), im = new Float64Array(N);
-      for (let p = 0; p + N <= lim; p += hop) {
+      const re = new Float64Array(N), im = new Float64Array(N), prev = new Float64Array(N / 2);
+      const onset = [], chroma = new Float64Array(12);
+      for (let p = 0; p + N <= lim; p += H) {
         for (let i = 0; i < N; i++) { re[i] = data[p + i] * win[i]; im[i] = 0; }
         fft(re, im);
+        let flux = 0;
         for (let k = 1; k < N / 2; k++) {
-          const freq = k * sr / N;
-          if (freq < 55 || freq > 2000) continue;
           const mag = Math.hypot(re[k], im[k]);
-          const pc = ((Math.round(12 * Math.log2(freq / 440)) + 9) % 12 + 12) % 12;
-          chroma[pc] += mag;
+          const lg = Math.log(1 + 1000 * mag);
+          const d = lg - prev[k]; if (d > 0) flux += d; prev[k] = lg;
+          const freq = k * sr / N;
+          if (freq >= 55 && freq <= 2000) { const pc = ((Math.round(12 * Math.log2(freq / 440)) + 9) % 12 + 12) % 12; chroma[pc] += mag; }
         }
+        onset.push(flux);
       }
-      let mx = 0; for (let i = 0; i < 12; i++) mx = Math.max(mx, chroma[i]);
-      if (mx > 0) for (let i = 0; i < 12; i++) chroma[i] /= mx;
+      let mean = 0; for (let i = 0; i < onset.length; i++) mean += onset[i]; mean /= (onset.length || 1);
+      const o = onset.map(v => Math.max(0, v - mean));
+      // Tempo: weighted autocorrelation (log-Gaussian prior @120 to resolve octaves)
+      const bpmMin = 50, bpmMax = 210;
+      const lagMin = Math.max(2, Math.floor(fps * 60 / bpmMax)), lagMax = Math.min(o.length - 1, Math.ceil(fps * 60 / bpmMin));
+      const acf = new Float64Array(lagMax + 2);
+      let bestLag = lagMin, bestScore = -1;
+      for (let lag = lagMin; lag <= lagMax; lag++) {
+        let s = 0; for (let i = 0; i + lag < o.length; i++) s += o[i] * o[i + lag];
+        acf[lag] = s;
+        const bpm = 60 * fps / lag, w = Math.exp(-0.5 * Math.pow(Math.log2(bpm / 120) / 0.8, 2));
+        const score = s * w; if (score > bestScore) { bestScore = score; bestLag = lag; }
+      }
+      let lagI = bestLag;
+      if (bestLag > lagMin && bestLag < lagMax) {
+        const a = acf[bestLag - 1], b = acf[bestLag], c = acf[bestLag + 1], den = a - 2 * b + c;
+        if (den !== 0) lagI = bestLag + 0.5 * (a - c) / den;
+      }
+      let bpm = 60 * fps / lagI;
+      // Phase: slide a pulse train at the tempo, maximise onset hit
+      const period = fps * 60 / bpm, nB = Math.floor((o.length - 1) / Math.max(1, period));
+      let bestPhi = 0, bestPhiScore = -1;
+      for (let phi = 0; phi < period; phi += 0.5) {
+        let s = 0; for (let b = 0; b <= nB; b++) { const idx = Math.round(phi + b * period); if (idx < o.length) s += o[idx]; }
+        if (s > bestPhiScore) { bestPhiScore = s; bestPhi = phi; }
+      }
+      const phase = bestPhi / fps;
+      // Key: Krumhansl-Schmuckler on the accumulated chroma
+      let mx = 0; for (let i = 0; i < 12; i++) mx = Math.max(mx, chroma[i]); if (mx > 0) for (let i = 0; i < 12; i++) chroma[i] /= mx;
       const maj = [6.35,2.23,3.48,2.33,4.38,4.09,2.52,5.19,2.39,3.66,2.29,2.88];
       const min = [6.33,2.68,3.52,5.38,2.60,3.53,2.54,4.75,3.98,2.69,3.34,3.17];
-      const corr = (prof, r) => { let a = 0; for (let i = 0; i < 12; i++) a += chroma[i] * prof[((i - r) % 12 + 12) % 12]; return a; };
-      let best = { score: -1 };
-      for (let r = 0; r < 12; r++) {
-        const sm = corr(maj, r); if (sm > best.score) best = { score: sm, pc: r, mode: 'maj' };
-        const si = corr(min, r); if (si > best.score) best = { score: si, pc: r, mode: 'min' };
-      }
-      return { pc: best.pc, name: NOTE[best.pc] + (best.mode === 'min' ? 'm' : '') };
-    } catch (e) { return null; }
-  }
-
-  // ── BPM detection (onset-envelope autocorrelation) ──────────────────────────
-  function detectBPM(buf) {
-    try {
-      const sr = buf.sampleRate, data = buf.getChannelData(0);
-      const hop = Math.max(1, Math.floor(sr / 200));
-      const env = [];
-      for (let i = 0; i + hop < data.length; i += hop) {
-        let s = 0; for (let j = 0; j < hop; j++) { const v = data[i + j]; s += v * v; }
-        env.push(Math.sqrt(s / hop));
-      }
-      const onset = [];
-      for (let i = 1; i < env.length; i++) { const d = env[i] - env[i - 1]; onset.push(d > 0 ? d : 0); }
-      const fps = sr / hop, minBPM = 70, maxBPM = 180;
-      const minLag = Math.floor(fps * 60 / maxBPM), maxLag = Math.floor(fps * 60 / minBPM);
-      let best = minLag, bestVal = -1;
-      for (let lag = minLag; lag <= maxLag; lag++) {
-        let sum = 0; for (let i = 0; i + lag < onset.length; i++) sum += onset[i] * onset[i + lag];
-        if (sum > bestVal) { bestVal = sum; best = lag; }
-      }
-      let bpm = fps * 60 / best;
-      while (bpm < 70) bpm *= 2; while (bpm > 140) bpm /= 2;
-      return Math.round(bpm);
-    } catch (e) { return null; }
+      const corr = (prof, r) => { let x = 0; for (let i = 0; i < 12; i++) x += chroma[i] * prof[((i - r) % 12 + 12) % 12]; return x; };
+      let bk = { score: -1 };
+      for (let r = 0; r < 12; r++) { const sm = corr(maj, r); if (sm > bk.score) bk = { score: sm, pc: r, mode: 'maj' }; const si = corr(min, r); if (si > bk.score) bk = { score: si, pc: r, mode: 'min' }; }
+      return { bpm, phase, keyPc: bk.pc, keyName: NOTE[bk.pc] + (bk.mode === 'min' ? 'm' : '') };
+    } catch (e) { return { bpm: 120, phase: 0, keyPc: null, keyName: '—' }; }
   }
 
   // ── Load ────────────────────────────────────────────────────────────────────
@@ -142,9 +145,8 @@
     try {
       const tb = new Tone.ToneAudioBuffer(); await tb.load(src.file);
       const audioBuffer = tb.get();
-      const bpm = detectBPM(audioBuffer);
-      const key = detectKey(audioBuffer);
-      const e = { tb, audioBuffer, bpm, keyPc: key ? key.pc : null, keyName: key ? key.name : '—' };
+      const a = analyze(audioBuffer);
+      const e = { tb, audioBuffer, bpm: a.bpm, phase: a.phase, keyPc: a.keyPc, keyName: a.keyName };
       cache.set(id, e); cur = e;
       resetView(); computeBars();
       return e;
@@ -161,7 +163,7 @@
   // Anchor the master clock/key to the current source; existing layers re-conform.
   function setMasterFromCur() {
     if (!cur) return;
-    if (cur.bpm) { masterBPM = cur.bpm; const bi = document.getElementById('sam-bpm'); if (bi) bi.value = masterBPM; try { Tone.getTransport().bpm.value = masterBPM; } catch (_) {} }
+    if (cur.bpm) { masterBPM = cur.bpm; const bi = document.getElementById('sam-bpm'); if (bi) bi.value = Math.round(masterBPM); try { Tone.getTransport().bpm.value = masterBPM; } catch (_) {} }
     if (cur.keyPc != null) masterKey = cur.keyPc;
     updateMasterKeyUI();
     reconformVoices();
@@ -234,12 +236,15 @@
       g.fillStyle = `rgba(${fg},${a.toFixed(2)})`;
       g.fillRect(i * barW, (H - bh) / 2, dpr, bh);
     });
-    if (isDragging && cur && cur.bpm) {
-      const gs = 60 / cur.bpm;
-      for (let t = Math.floor(viewStart / gs) * gs, guard = 0; t <= viewEnd && guard < 6000; t += gs, guard++) {
-        const x = Math.round(xOf(t)); if (x < 0 || x > W) continue;
-        g.fillStyle = `rgba(${fg},${Math.round(t / gs) % 4 === 0 ? 0.16 : 0.06})`;
-        g.fillRect(x, 0, 1, H);
+    if (cur && cur.bpm) {
+      const gs = 60 / cur.bpm, ph = cur.phase || 0, px = (gs / vl) * W;
+      if (px >= 6 * dpr) {
+        let k = Math.floor((viewStart - ph) / gs);
+        for (let guard = 0; guard < 8000; k++, guard++) {
+          const t = ph + k * gs; if (t > viewEnd) break; if (t < viewStart) continue;
+          const x = Math.round(xOf(t)); const bar = (((k % 4) + 4) % 4) === 0;
+          g.fillStyle = `rgba(${fg},${bar ? 0.13 : 0.05})`; g.fillRect(x, 0, 1, H);
+        }
       }
     }
     if (cur) vis.forEach(v => {
@@ -266,7 +271,7 @@
     const el = document.getElementById('sam-lcd'); if (!el) return;
     const src = SOURCES.find(s => s.id === activeId);
     if (msg != null) { el.textContent = msg; return; }
-    const meta = cur ? (' · ' + (cur.bpm || '—') + ' BPM · ' + (cur.keyName || '—')) : '';
+    const meta = cur ? (' · ' + (cur.bpm ? Math.round(cur.bpm) : '—') + ' BPM · ' + (cur.keyName || '—')) : '';
     el.textContent = 'SLICE · ' + (src ? src.label.toUpperCase() + ' — ' + src.artist : '—') + meta;
   }
 
@@ -278,6 +283,7 @@
     wrap.addEventListener('pointerdown', (e) => {
       if (!cur) return;
       if (e.altKey) { resetView(); computeBars(); e.preventDefault(); return; }
+      if (e.shiftKey) { const g = gridSec() || 0.05, tt = timeAt(fracAt(e)); cur.phase = tt - Math.floor(tt / g) * g; renderWave(); e.preventDefault(); return; }
       const dur = cur.audioBuffer.duration, f = fracAt(e), tAbs = timeAt(f), t = snap(tAbs);
       let toggle = null;
       if (latch) toggle = voices.find(v => v.srcId === activeId && tAbs >= v.loopStart && tAbs <= v.loopEnd) || null;
@@ -382,6 +388,10 @@
     if (gr) gr.addEventListener('change', () => { quantGrid = gr.value; });
     const setm = document.getElementById('sam-setmaster');
     if (setm) setm.addEventListener('click', () => { setMasterFromCur(); });
+    const half = document.getElementById('sam-half');
+    if (half) half.addEventListener('click', () => { if (cur && cur.bpm) { cur.bpm = Math.max(40, cur.bpm / 2); setLcd(); renderWave(); } });
+    const dbl = document.getElementById('sam-double');
+    if (dbl) dbl.addEventListener('click', () => { if (cur && cur.bpm) { cur.bpm = Math.min(240, cur.bpm * 2); setLcd(); renderWave(); } });
     document.getElementById('sam-stop').addEventListener('click', stopAll);
   }
 

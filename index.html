@@ -394,6 +394,8 @@
         <div class="sam-controls">
           <label class="sam-ctl"><span>Master BPM</span><input type="number" id="sam-bpm" class="sam-num" min="40" max="240" step="1" value="120" aria-label="Master BPM"></label>
           <button type="button" class="sam-tgl" id="sam-setmaster" title="Set the master tempo &amp; key from the selected source">Set master</button>
+          <button type="button" class="sam-tgl" id="sam-half" title="Halve the grid tempo (fix octave error)">÷2</button>
+          <button type="button" class="sam-tgl" id="sam-double" title="Double the grid tempo (fix octave error)">×2</button>
           <span class="sam-ctl"><span>Key</span><span id="sam-key" class="sam-ctl-val">—</span></span>
           <button type="button" class="sam-tgl active" id="sam-keymatch" aria-pressed="true">Key match</button>
           <button type="button" class="sam-tgl active" id="sam-quant" aria-pressed="true">Quantize</button>
@@ -401,7 +403,7 @@
           <label class="sam-ctl"><span>Pitch</span><input type="range" id="sam-pitch" min="-12" max="12" step="1" value="0" aria-label="Pitch in semitones"><span id="sam-pitch-val" class="sam-ctl-val">+0 st</span></label>
           <label class="sam-ctl"><span>Volume</span><input type="range" id="sam-vol" min="0" max="1" step="0.01" value="1" aria-label="Volume"><span id="sam-vol-val" class="sam-ctl-val">100%</span></label>
         </div>
-        <p class="sam-hint">Click to drop a 1-bar loop · drag to set its length (snaps to the beat) · scroll to zoom, ⌥-click to reset · click a loop to stop it · Stop clears all</p>
+        <p class="sam-hint">Click to drop a 1-bar loop · drag to set its length (snaps to the grid) · scroll to zoom · ⇧-click sets the downbeat · ÷2/×2 fix octave · ⌥-click resets zoom</p>
       </div>
     </div>
   </aside>
