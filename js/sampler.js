@@ -1,8 +1,8 @@
-// js/sampler.js — 2240 sampler (v2.1).
+// js/sampler.js — 2240 sampler (v2.2).
 // Tone.GrainPlayer engine: pitch-independent time-stretch + detune. Per-source
-// BPM + key are auto-detected. Triggered sources beat-match to a Master BPM and
-// (optionally) key-match to a Master key; triggers quantize to the master clock.
-// Voices are source-independent, so multiple tracks can layer live.
+// BPM + key auto-detected. Sources beat-match to a Master BPM and (optionally)
+// key-match to a Master key; triggers quantize to the master clock. Voices are
+// source-independent (layer live). The waveform supports zoom + pan.
 (function () {
   const Tone = window.Tone;
   const SOURCES = (window.CATALOGUE || [])
@@ -14,15 +14,17 @@
   if (!SOURCES.length) { section.style.display = 'none'; return; }
 
   const NOTE = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-  const cache = new Map();   // id -> { tb, audioBuffer, bpm, keyPc, keyName }
+  const MINVIEW = 0.05;
+  const cache = new Map();
   let cur = null;
   let activeId = SOURCES[0].id;
-  let semis = 0, volume = 1.0, masterBPM = 120, masterSet = false;
-  let masterKey = null;            // pitch class 0-11
+  let semis = 0, volume = 1.0, masterBPM = 120;
+  let masterKey = null;
   let keyMatch = true, quantize = true, quantGrid = '4n';
   let latch = true, isDragging = false;
-  let voices = [];                 // { gp, srcId, bpm, keyPc, looping, loopStart, loopEnd, t0, posAtT0, rate }
+  let voices = [];
   let out = null, bars = [];
+  let viewStart = 0, viewEnd = 1;   // visible window in source seconds (zoom/pan)
 
   const nowt = () => Tone.getContext().currentTime;
   const ensureOut = () => (out || (out = new Tone.Gain(volume).toDestination()));
@@ -30,8 +32,24 @@
   const gridSec = () => (cur && cur.bpm ? 60 / cur.bpm : null);
   const snap = (t) => { const g = gridSec(), dur = cur.audioBuffer.duration; const v = g ? Math.round(t / g) * g : t; return Math.max(0, Math.min(v, dur)); };
   const rateFor = (bpm) => (bpm ? masterBPM / bpm : 1);
+  const timeAt = (f) => viewStart + f * (viewEnd - viewStart);
   function keyShift(pc) { if (!keyMatch || pc == null || masterKey == null) return 0; let d = (masterKey - pc) % 12; if (d > 6) d -= 12; if (d < -5) d += 12; return d; }
   const detuneFor = (pc) => (keyShift(pc) + semis) * 100;
+
+  function resetView() { viewStart = 0; viewEnd = cur ? cur.audioBuffer.duration : 1; }
+  function clampView() {
+    const dur = cur ? cur.audioBuffer.duration : 1;
+    let len = Math.max(MINVIEW, Math.min(viewEnd - viewStart, dur));
+    if (viewStart < 0) viewStart = 0;
+    viewEnd = viewStart + len;
+    if (viewEnd > dur) { viewEnd = dur; viewStart = Math.max(0, dur - len); }
+  }
+  function zoomAt(f, factor) {
+    const dur = cur.audioBuffer.duration, cursorT = viewStart + f * (viewEnd - viewStart);
+    let len = (viewEnd - viewStart) * factor;
+    len = Math.max(MINVIEW, Math.min(len, dur));
+    viewStart = cursorT - f * len; viewEnd = viewStart + len; clampView();
+  }
 
   // ── FFT (iterative radix-2) ─────────────────────────────────────────────────
   function fft(re, im) {
@@ -118,7 +136,7 @@
 
   // ── Load ────────────────────────────────────────────────────────────────────
   async function load(id) {
-    if (cache.has(id)) { cur = cache.get(id); computeBars(); return cur; }
+    if (cache.has(id)) { cur = cache.get(id); resetView(); computeBars(); return cur; }
     const src = SOURCES.find(s => s.id === id);
     setLcd('Loading ' + src.label + '…');
     try {
@@ -128,7 +146,7 @@
       const key = detectKey(audioBuffer);
       const e = { tb, audioBuffer, bpm, keyPc: key ? key.pc : null, keyName: key ? key.name : '—' };
       cache.set(id, e); cur = e;
-      computeBars();
+      resetView(); computeBars();
       return e;
     } catch (err) {
       console.warn('[sampler] load failed', id, err.message);
@@ -181,7 +199,7 @@
     return v.posAtT0 + played;
   }
 
-  // ── Waveform ────────────────────────────────────────────────────────────────
+  // ── Waveform (view-aware) ───────────────────────────────────────────────────
   const fgRGB = () => (getComputedStyle(document.documentElement).getPropertyValue('--fg-rgb').trim()) || '239,239,239';
   function computeBars() {
     const cv = document.getElementById('sam-wave'); if (!cv) return;
@@ -189,11 +207,13 @@
     cv.width = Math.round(cv.offsetWidth * dpr); cv.height = Math.round(cv.offsetHeight * dpr);
     bars = [];
     if (!cur) { renderWave(); return; }
-    const ch = cur.audioBuffer.getChannelData(0);
-    const barW = 2 * dpr, n = Math.max(1, Math.floor(cv.width / barW)), step = Math.max(1, Math.floor(ch.length / n));
+    const ch = cur.audioBuffer.getChannelData(0), sr = cur.audioBuffer.sampleRate;
+    const s0 = Math.max(0, Math.floor(viewStart * sr)), s1 = Math.min(ch.length, Math.ceil(viewEnd * sr));
+    const span = Math.max(1, s1 - s0);
+    const barW = 2 * dpr, n = Math.max(1, Math.floor(cv.width / barW)), step = Math.max(1, Math.floor(span / n));
     for (let i = 0; i < n; i++) {
-      let p = 0; const off = i * step;
-      for (let j = 0; j < step; j++) { const v = Math.abs(ch[off + j] || 0); if (v > p) p = v; }
+      let p = 0; const off = s0 + i * step;
+      for (let j = 0; j < step; j++) { const idx = off + j; if (idx >= s1) break; const v = Math.abs(ch[idx] || 0); if (v > p) p = v; }
       bars.push(p);
     }
     renderWave();
@@ -202,14 +222,13 @@
     const cv = document.getElementById('sam-wave'); if (!cv) return;
     const g = cv.getContext('2d'); const W = cv.width, H = cv.height; const dpr = window.devicePixelRatio || 1;
     g.clearRect(0, 0, W, H);
-    const fg = fgRGB(), barW = 2 * dpr;
+    const fg = fgRGB(), barW = 2 * dpr, vl = viewEnd - viewStart || 1;
     const vis = voices.filter(v => v.srcId === activeId);
     const now = (cur && vis.length) ? nowt() : 0;
-    const dur = cur ? cur.audioBuffer.duration : 1;
-    const ranges = (cur ? vis : []).map(v => { const a = v.loopStart / dur, b = Math.min(voicePos(v, now) / dur, 1); return [Math.min(a, b), Math.max(a, b)]; });
+    const xOf = (t) => ((t - viewStart) / vl) * W;
     bars.forEach((p, i) => {
-      const frac = (i * barW + barW * 0.5) / W;
-      const played = ranges.some(r => frac >= r[0] && frac <= r[1]);
+      const barTime = viewStart + ((i * barW + barW * 0.5) / W) * vl;
+      const played = vis.some(v => { const pos = voicePos(v, now); return barTime >= Math.min(v.loopStart, pos) && barTime <= Math.max(v.loopStart, pos); });
       const a = played ? (0.55 + p * 0.4) : (0.16 + p * 0.32);
       const bh = Math.max(dpr, p * H * 0.82);
       g.fillStyle = `rgba(${fg},${a.toFixed(2)})`;
@@ -217,23 +236,25 @@
     });
     if (isDragging && cur && cur.bpm) {
       const gs = 60 / cur.bpm;
-      for (let t = 0, k = 0; t <= dur + 1e-6; t += gs, k++) {
-        const gx = Math.round(t / dur * W);
-        g.fillStyle = `rgba(${fg},${k % 4 === 0 ? 0.16 : 0.06})`;
-        g.fillRect(gx, 0, 1, H);
+      for (let t = Math.floor(viewStart / gs) * gs, guard = 0; t <= viewEnd && guard < 6000; t += gs, guard++) {
+        const x = Math.round(xOf(t)); if (x < 0 || x > W) continue;
+        g.fillStyle = `rgba(${fg},${Math.round(t / gs) % 4 === 0 ? 0.16 : 0.06})`;
+        g.fillRect(x, 0, 1, H);
       }
     }
     if (cur) vis.forEach(v => {
-      const x1 = Math.round(v.loopStart / dur * W), x2 = Math.round(v.loopEnd / dur * W);
-      g.fillStyle = `rgba(${fg},0.07)`; g.fillRect(x1, 0, x2 - x1, H);
+      const x1 = xOf(v.loopStart), x2 = xOf(v.loopEnd);
+      if (x2 < 0 || x1 > W) return;
+      const cx1 = Math.max(0, Math.round(x1)), cx2 = Math.min(W, Math.round(x2));
+      g.fillStyle = `rgba(${fg},0.07)`; g.fillRect(cx1, 0, cx2 - cx1, H);
       g.fillStyle = `rgba(${fg},0.45)`;
-      g.fillRect(x1, 0, Math.max(1, dpr), H);
-      g.fillRect(x2 - Math.max(1, dpr), 0, Math.max(1, dpr), H);
+      if (x1 >= 0 && x1 <= W) g.fillRect(Math.round(x1), 0, Math.max(1, dpr), H);
+      if (x2 >= 0 && x2 <= W) g.fillRect(Math.round(x2) - Math.max(1, dpr), 0, Math.max(1, dpr), H);
     });
     if (cur && vis.length) vis.forEach(v => {
-      const x = Math.round(clamp01(voicePos(v, now) / dur) * W);
+      const x = xOf(voicePos(v, now)); if (x < 0 || x > W) return;
       g.fillStyle = `rgba(${fg},0.95)`;
-      g.fillRect(x - Math.ceil(dpr / 2), 0, Math.max(1, Math.round(dpr)), H);
+      g.fillRect(Math.round(x) - Math.ceil(dpr / 2), 0, Math.max(1, Math.round(dpr)), H);
     });
   }
   let rafId = null;
@@ -249,16 +270,17 @@
     el.textContent = 'SLICE · ' + (src ? src.label.toUpperCase() + ' — ' + src.artist : '—') + meta;
   }
 
-  // ── Slice interaction (click = 1-bar loop; drag = region, snapped) ──────────
+  // ── Slice interaction + zoom/pan ────────────────────────────────────────────
   function wireSlice() {
     const wrap = document.getElementById('sam-wave-wrap');
     let drag = null; const THRESH = 0.008;
     const fracAt = (e) => { const r = wrap.getBoundingClientRect(); return clamp01((e.clientX - r.left) / r.width); };
     wrap.addEventListener('pointerdown', (e) => {
       if (!cur) return;
-      const dur = cur.audioBuffer.duration, f = fracAt(e), t = snap(f * dur);
+      if (e.altKey) { resetView(); computeBars(); e.preventDefault(); return; }
+      const dur = cur.audioBuffer.duration, f = fracAt(e), tAbs = timeAt(f), t = snap(tAbs);
       let toggle = null;
-      if (latch) toggle = voices.find(v => v.srcId === activeId && f * dur >= v.loopStart && f * dur <= v.loopEnd) || null;
+      if (latch) toggle = voices.find(v => v.srcId === activeId && tAbs >= v.loopStart && tAbs <= v.loopEnd) || null;
       let voice = null;
       if (!toggle) {
         const g = gridSec(), len = g ? Math.min(4 * g, dur - t) : (dur - t);
@@ -277,7 +299,7 @@
       if (Math.abs(f - drag.downF) > THRESH) drag.moved = true;
       if (!drag.moved) return;
       if (!drag.voice) { drag.toggle = null; drag.voice = trigger(drag.anchor, gridSec() || 0.05, { loop: true }); }
-      const g = gridSec() || 0.05, t2 = snap(f * dur);
+      const g = gridSec() || 0.05, t2 = snap(timeAt(f));
       let sc = Math.min(drag.anchor, t2), en = Math.max(drag.anchor, t2);
       if (en - sc < g) en = Math.min(sc + g, dur);
       drag.voice.loopStart = sc; drag.voice.loopEnd = en;
@@ -292,6 +314,19 @@
     };
     wrap.addEventListener('pointerup', end);
     wrap.addEventListener('pointercancel', end);
+
+    // Zoom (scroll / pinch, centred on cursor) + pan (shift-scroll or horizontal).
+    wrap.addEventListener('wheel', (e) => {
+      if (!cur) return;
+      e.preventDefault();
+      const r = wrap.getBoundingClientRect(), f = clamp01((e.clientX - r.left) / r.width), vl = viewEnd - viewStart;
+      if (e.ctrlKey) { zoomAt(f, Math.exp(e.deltaY * 0.01)); }
+      else if (e.shiftKey || Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        const pan = (e.shiftKey ? e.deltaY : e.deltaX) / r.width * vl;
+        viewStart += pan; viewEnd += pan; clampView();
+      } else { zoomAt(f, Math.exp(e.deltaY * 0.0015)); }
+      computeBars();
+    }, { passive: false });
   }
 
   // ── Controls ────────────────────────────────────────────────────────────────
@@ -328,10 +363,9 @@
     if (be) be.addEventListener('input', () => {
       const val = parseInt(be.value, 10);
       if (!isFinite(val) || val < 40 || val > 240) return;
-      masterBPM = val; masterSet = true;
+      masterBPM = val;
       try { Tone.getTransport().bpm.value = masterBPM; } catch (_) {}
-      const now = nowt();
-      voices.forEach(v => { const nr = rateFor(v.bpm); v.posAtT0 = voicePos(v, now); v.t0 = now; v.rate = nr; v.gp.playbackRate = nr; });
+      reconformVoices();
     });
     const km = document.getElementById('sam-keymatch');
     if (km) km.addEventListener('click', () => {
