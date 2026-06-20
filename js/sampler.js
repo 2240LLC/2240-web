@@ -27,6 +27,7 @@
   let viewStart = 0, viewEnd = 1;   // visible window in source seconds (zoom/pan)
 
   const nowt = () => Tone.getContext().currentTime;
+  const audioLat = () => { try { const c = Tone.getContext(), r = c.rawContext || c; return (r.outputLatency || 0) + (r.baseLatency || 0); } catch (e) { return 0; } };
   const ensureOut = () => (out || (out = new Tone.Gain(volume).toDestination()));
   const clamp01 = x => Math.max(0, Math.min(x, 1));
   const gridSec = () => (cur && cur.bpm ? 60 / cur.bpm : null);
@@ -158,7 +159,11 @@
   function updateMasterKeyUI() { const el = document.getElementById('sam-key'); if (el) el.textContent = masterKey != null ? NOTE[masterKey] : '—'; }
   function reconformVoices() {
     const now = nowt();
-    voices.forEach(v => { const nr = rateFor(v.bpm); v.posAtT0 = voicePos(v, now); v.t0 = now; v.rate = nr; v.gp.playbackRate = nr; v.gp.detune = detuneFor(v.keyPc); });
+    voices.forEach(v => {
+      const nr = rateFor(v.bpm);
+      if (now >= v.t0) { v.posAtT0 = voicePos(v, now); v.t0 = now; }
+      v.rate = nr; v.gp.playbackRate = nr; v.gp.detune = detuneFor(v.keyPc);
+    });
   }
   // Anchor the master clock/key to the current source; existing layers re-conform.
   function setMasterFromCur() {
@@ -178,7 +183,7 @@
     const gp = new Tone.GrainPlayer(cur.tb);
     gp.loop = !!opts.loop; gp.loopStart = startSec; gp.loopEnd = startSec + durSec;
     gp.playbackRate = r; gp.detune = detuneFor(cur.keyPc);
-    gp.grainSize = 0.12; gp.overlap = 0.08;
+    gp.grainSize = 0.1; gp.overlap = 0.05;
     gp.connect(ensureOut());
     let t0;
     if (quantize) {
@@ -226,7 +231,7 @@
     g.clearRect(0, 0, W, H);
     const fg = fgRGB(), barW = 2 * dpr, vl = viewEnd - viewStart || 1;
     const vis = voices.filter(v => v.srcId === activeId);
-    const now = (cur && vis.length) ? nowt() : 0;
+    const now = (cur && vis.length) ? (nowt() - audioLat()) : 0;
     const xOf = (t) => ((t - viewStart) / vl) * W;
     bars.forEach((p, i) => {
       const barTime = viewStart + ((i * barW + barW * 0.5) / W) * vl;
