@@ -140,7 +140,7 @@
     const now = nowt();
     voices.forEach(v => { const nr = rateFor(v.bpm); v.posAtT0 = voicePos(v, now); v.t0 = now; v.rate = nr; v.gp.playbackRate = nr; v.gp.detune = detuneFor(v.keyPc); });
   }
-  // Master clock/key follow the currently selected source; layers re-conform to it.
+  // Anchor the master clock/key to the current source; existing layers re-conform.
   function setMasterFromCur() {
     if (!cur) return;
     if (cur.bpm) { masterBPM = cur.bpm; const bi = document.getElementById('sam-bpm'); if (bi) bi.value = masterBPM; try { Tone.getTransport().bpm.value = masterBPM; } catch (_) {} }
@@ -310,7 +310,7 @@
     });
     document.getElementById('sam-source').addEventListener('change', async (e) => {
       activeId = e.target.value;
-      await load(activeId); setMasterFromCur(); setLcd(); renderWave();
+      await load(activeId); setLcd(); renderWave();
     });
     const pe = document.getElementById('sam-pitch');
     pe.addEventListener('input', () => {
@@ -346,6 +346,8 @@
     });
     const gr = document.getElementById('sam-grid');
     if (gr) gr.addEventListener('change', () => { quantGrid = gr.value; });
+    const setm = document.getElementById('sam-setmaster');
+    if (setm) setm.addEventListener('click', () => { setMasterFromCur(); });
     document.getElementById('sam-stop').addEventListener('click', stopAll);
   }
 
