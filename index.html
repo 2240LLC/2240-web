@@ -231,6 +231,11 @@
     .sam-ctl input[type=range] { width: 130px; accent-color: var(--fg); }
     .sam-ctl-val { color: var(--fg); font-variant-numeric: tabular-nums; min-width: 42px; }
     .sam-num { font-family: var(--mono); font-size: 11px; color: var(--fg); background: none; border: 1px solid var(--rule); padding: 5px 6px; width: 56px; text-align: center; }
+    .sam-tgl { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+               color: var(--fg-dim); background: none; border: 1px solid var(--rule); padding: 6px 11px; cursor: pointer;
+               align-self: center; transition: color 0.15s, background 0.15s, border-color 0.15s; }
+    .sam-tgl.active { color: var(--bg); background: var(--fg); border-color: var(--fg); }
+    .sam-tgl:hover:not(.active) { color: var(--fg); border-color: var(--fg-dim); }
     .sam-hint { margin-top: 12px; padding-bottom: 18px; font-size: 9px; letter-spacing: 0.1em; color: var(--fg-faint); }
 
     /* ── Holdings (other records) ─────────────────────────────────── */
@@ -390,6 +395,10 @@
         </div>
         <div class="sam-controls">
           <label class="sam-ctl"><span>Master BPM</span><input type="number" id="sam-bpm" class="sam-num" min="40" max="240" step="1" value="120" aria-label="Master BPM"></label>
+          <span class="sam-ctl"><span>Key</span><span id="sam-key" class="sam-ctl-val">—</span></span>
+          <button type="button" class="sam-tgl active" id="sam-keymatch" aria-pressed="true">Key match</button>
+          <button type="button" class="sam-tgl active" id="sam-quant" aria-pressed="true">Quantize</button>
+          <label class="sam-ctl"><span>Grid</span><select id="sam-grid" class="sam-select"><option value="4n">1/4</option><option value="2n">1/2</option><option value="1m">Bar</option></select></label>
           <label class="sam-ctl"><span>Pitch</span><input type="range" id="sam-pitch" min="-12" max="12" step="1" value="0" aria-label="Pitch in semitones"><span id="sam-pitch-val" class="sam-ctl-val">+0 st</span></label>
           <label class="sam-ctl"><span>Volume</span><input type="range" id="sam-vol" min="0" max="1" step="0.01" value="1" aria-label="Volume"><span id="sam-vol-val" class="sam-ctl-val">100%</span></label>
         </div>
