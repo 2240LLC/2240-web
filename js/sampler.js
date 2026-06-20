@@ -252,7 +252,7 @@
           const t = ph + k * u; if (t > viewEnd) break; if (t < viewStart) continue;
           const x = Math.round(xOf(t)); const beats = k * bpu;
           const bar = Math.abs((((beats % 4) + 4) % 4)) < 1e-6;
-          g.fillStyle = `rgba(${fg},${bar ? 0.13 : 0.05})`; g.fillRect(x, 0, 1, H);
+          g.fillStyle = `rgba(${fg},${bar ? 0.34 : 0.15})`; g.fillRect(x, 0, bar ? Math.max(1, dpr) : 1, H);
         }
       }
     }
@@ -307,9 +307,8 @@
       });
       if (del) { stopVoice(del); renderWave(); e.preventDefault(); return; }
       const dur = cur.audioBuffer.duration, f = fracAt(e), t = snap(timeAt(f));
-      const u = snapSec() || 0.05, bar = cur.bpm ? (60 / cur.bpm) * 4 : u;
-      const len = Math.min(bar, dur - t);
-      const en = Math.min(t + Math.max(len, u), dur);
+      const u = snapSec() || 0.05;
+      const en = Math.min(t + u, dur);
       const sc = Math.min(t, Math.max(0, en - u));
       const voice = trigger(sc, en - sc, { loop: true });
       drag = { anchor: t, voice, moved: false, downF: f };
