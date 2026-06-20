@@ -67,7 +67,6 @@
       flex-direction: column;
       position: relative;
       overflow-x: hidden;
-      padding-bottom: 52px;
       transition: background 0.3s ease, color 0.3s ease;
     }
 
@@ -111,6 +110,8 @@
     .theme-toggle:hover { color: var(--fg); border-color: var(--fg-dim); }
     .theme-toggle:focus-visible { outline: 1px solid var(--fg-dim); outline-offset: 2px; }
     .theme-toggle .glyph { width: 9px; height: 9px; flex-shrink: 0; }
+    .nav-link { font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-dim); text-decoration: none; border: 1px solid var(--rule); padding: 6px 9px; align-self: center; transition: color 0.15s, border-color 0.15s; }
+    .nav-link:hover { color: var(--fg); border-color: var(--fg-dim); }
 
     /* ── Status strip ─────────────────────────────────────────────── */
     .statusbar { display: flex; align-items: center; gap: 12px;
@@ -294,6 +295,7 @@
         <span class="logo-mark logo-wordmark" role="img" aria-label="2240"></span>
       </a>
       <div class="topbar-right">
+        <a href="/sampler.html" class="nav-link">Sampler</a>
         <button type="button" class="theme-toggle" id="theme-toggle"
                 aria-label="Theme: system" title="Switch theme">
           <svg class="glyph" viewBox="0 0 10 10" aria-hidden="true" id="theme-glyph"></svg>
@@ -375,137 +377,16 @@
     <span><a href="mailto:tobybrown@2240.us">tobybrown@2240.us</a></span>
   </footer>
 
-  <!-- Sampler — bottom-pinned, expandable -->
-  <aside class="sampler" id="sampler" aria-label="Sampler">
-    <div class="sam-inner">
-      <button type="button" class="sam-tab" id="sam-toggle" aria-expanded="false" aria-controls="sam-panel">
-        <span class="sampler-title">Sampler</span>
-        <span id="sam-lcd" class="sam-lcd"></span>
-        <span class="sam-chev" aria-hidden="true">▴</span>
-      </button>
-      <div class="sam-panel" id="sam-panel">
-        <div class="sam-bar">
-          <select id="sam-source" class="sam-select" aria-label="Sample source"></select>
-          <div class="sam-trigmode" role="group" aria-label="Trigger mode">
-            <button type="button" class="sam-seg active" data-mode="latch" aria-pressed="true">Latch</button>
-            <button type="button" class="sam-seg" data-mode="hold" aria-pressed="false">Hold</button>
-          </div>
-          <button type="button" id="sam-stop" class="sam-stopbtn">Stop</button>
-        </div>
-        <div class="sam-wave-wrap" id="sam-wave-wrap">
-          <canvas id="sam-wave" role="img" aria-label="Sample waveform — click to trigger, hold to loop"></canvas>
-        </div>
-        <div class="sam-controls">
-          <div class="sam-group">
-            <span class="sam-group-label">Tempo</span>
-            <span class="sam-ctl"><span>Song</span><span id="sam-songbpm" class="sam-ctl-val">— BPM</span></span>
-            <button type="button" class="sam-tgl" id="sam-half" title="Halve the song's detected tempo (fix octave error)">÷2</button>
-            <button type="button" class="sam-tgl" id="sam-double" title="Double the song's detected tempo (fix octave error)">×2</button>
-            <label class="sam-ctl"><span>Master</span><input type="number" id="sam-bpm" class="sam-num" min="40" max="240" step="1" value="120" aria-label="Master BPM"></label>
-            <button type="button" class="sam-tgl" id="sam-setmaster" title="Set the master tempo &amp; key from the selected song">Set master</button>
-          </div>
-          <div class="sam-group">
-            <span class="sam-group-label">Key</span>
-            <span class="sam-ctl"><span>Master</span><span id="sam-key" class="sam-ctl-val">—</span></span>
-            <button type="button" class="sam-tgl active" id="sam-keymatch" aria-pressed="true">Key match</button>
-            <label class="sam-ctl"><span>Pitch</span><input type="range" id="sam-pitch" min="-12" max="12" step="1" value="0" aria-label="Pitch in semitones"><span id="sam-pitch-val" class="sam-ctl-val">+0 st</span></label>
-          </div>
-          <div class="sam-group">
-            <span class="sam-group-label">Grid</span>
-            <button type="button" class="sam-tgl active" id="sam-quant" aria-pressed="true">Quantize</button>
-            <label class="sam-ctl"><span>Snap</span><select id="sam-grid" class="sam-select"><option value="16n">1/16</option><option value="8n">1/8</option><option value="4n" selected>1/4</option><option value="2n">1/2</option><option value="1m">Bar</option></select></label>
-          </div>
-          <div class="sam-group">
-            <span class="sam-group-label">Mix</span>
-            <label class="sam-ctl"><span>Volume</span><input type="range" id="sam-vol" min="0" max="1" step="0.01" value="1" aria-label="Volume"><span id="sam-vol-val" class="sam-ctl-val">100%</span></label>
-          </div>
-        </div>
-        <p class="sam-hint">Click drops a loop one grid-step long · drag a loop’s edge to resize, its body to move · click a loop’s × or right-click it to remove · Stop clears all · scroll to zoom · ⇧-click sets the downbeat · ÷2/×2 fix octave</p>
-      </div>
-    </div>
-  </aside>
+
 
   <!-- Streaming-waveform engine (ported from dev: streaming playback + precomputed peaks) -->
+  <script src="js/catalogue.js"></script>
   <script src="js/player.js"></script>
   <script>
   (function () {
     // ── Catalogue (placeholder) ───────────────────────────────────────────────
     // Streaming links are placeholders ('#') — fill in before going live.
-    const CATALOGUE = [
-      {
-        no: '2240-001', title: 'You Are The Man', artist: 'Tonsure',
-        kind: 'Single', year: 2026, isNew: true,
-        format: 'WAV', sampleRate: '48 kHz', bitDepth: '24-bit', license: 'CC BY 4.0',
-        audio: 'https://tb-sounds.2240.us/You%20Are%20The%20Man.wav',
-        peaks: 'audio/peaks/tonsure.json',
-        sample: 'https://tb-sounds.2240.us/you-are-the-man.mp3',
-        downloads: [
-          { label: 'WAV · Free', url: 'https://tb-sounds.2240.us/You%20Are%20The%20Man.wav', fname: 'You Are The Man — Tonsure (2240-001).wav' },
-        ],
-        links: {
-          'Spotify':     'https://open.spotify.com/track/2NEpdDyP44lIr60axDeHRJ',
-          'Apple Music': 'https://music.apple.com/us/album/you-are-the-man/6778606462?i=6778606463',
-          'Bandcamp':    'https://tobybrown.bandcamp.com/track/you-are-the-man',
-          'Tidal':       'https://tidal.com/album/532119816/u',
-        },
-      },
-      {
-        no: '2240-002', title: 'Washboard', artist: 'Toby Brown',
-        kind: 'Single', year: 2025, isNew: false,
-        format: 'WAV', sampleRate: '48 kHz', bitDepth: '24-bit', license: 'CC BY 4.0',
-        audio: 'https://tb-sounds.2240.us/Washboard_MSTR_2448.wav',
-        peaks: 'audio/peaks/washboard.json',
-        sample: 'https://tb-sounds.2240.us/washboard.mp3',
-        downloads: [
-          { label: 'WAV · Free', url: 'https://tb-sounds.2240.us/Washboard_MSTR_2448.wav', fname: 'Washboard — Toby Brown (2240-002).wav' },
-        ],
-        links: {
-          'Spotify':     'https://open.spotify.com/track/4rguPdxBMk7NI8VJZ3Pp5z',
-          'Apple Music': 'https://music.apple.com/us/album/washboard-single/1833580373',
-          'Bandcamp':    'https://tobybrown.bandcamp.com/track/washboard',
-          'Tidal':       'https://tidal.com/album/454247392/u',
-        },
-      },
-      // 2240-003 / 004 — "Is It Even Easier?" dual single. R2 URLs are PREDICTED
-      // from the uploaded filenames; confirm/correct after the R2 upload.
-      {
-        no: '2240-003', title: 'Dodge', artist: 'Toby Brown',
-        kind: 'Single', year: 2021, isNew: false,
-        format: 'WAV', sampleRate: '176.4 kHz', bitDepth: '24-bit', license: 'CC BY 4.0',
-        audio: 'https://tb-sounds.2240.us/Dodge_48-24.wav',
-        peaks: 'audio/peaks/dodge.json',
-        sample: 'https://tb-sounds.2240.us/dodge.mp3',
-        downloads: [
-          { label: '48 kHz · 24-bit · Free', url: 'https://tb-sounds.2240.us/Dodge_48-24.wav', fname: 'Dodge — Toby Brown (2240-003) 48k-24.wav' },
-          { label: '176.4 kHz master',        url: 'https://tb-sounds.2240.us/Dodge_Master1.5.wav', fname: 'Dodge — Toby Brown (2240-003) master.wav' },
-        ],
-        links: {
-          'Spotify':     'https://open.spotify.com/album/5AN4wmOj3dysKgowSRwews',
-          'Apple Music': 'https://music.apple.com/us/album/is-it-even-easier-single/1595173126',
-          'Bandcamp':    'https://tobybrown.bandcamp.com/album/is-it-even-easier',
-          'Tidal':       'https://tidal.com/album/204959504/u',
-        },
-      },
-      {
-        no: '2240-004', title: 'Half Capacity', artist: 'Toby Brown',
-        kind: 'Single', year: 2021, isNew: false,
-        format: 'WAV', sampleRate: '176.4 kHz', bitDepth: '24-bit', license: 'CC BY 4.0',
-        audio: 'https://tb-sounds.2240.us/HalfCapacity_48-24.wav',
-        peaks: 'audio/peaks/half-capacity.json',
-        sample: 'https://tb-sounds.2240.us/half-capacity.mp3',
-        downloads: [
-          { label: '48 kHz · 24-bit · Free', url: 'https://tb-sounds.2240.us/HalfCapacity_48-24.wav', fname: 'Half Capacity — Toby Brown (2240-004) 48k-24.wav' },
-          { label: '176.4 kHz master',        url: 'https://tb-sounds.2240.us/HalfCapacity_Master1.0.wav', fname: 'Half Capacity — Toby Brown (2240-004) master.wav' },
-        ],
-        links: {
-          'Spotify':     'https://open.spotify.com/album/5AN4wmOj3dysKgowSRwews',
-          'Apple Music': 'https://music.apple.com/us/album/is-it-even-easier-single/1595173126',
-          'Bandcamp':    'https://tobybrown.bandcamp.com/album/is-it-even-easier',
-          'Tidal':       'https://tidal.com/album/204959504/u',
-        },
-      },
-    ];
-    window.CATALOGUE = CATALOGUE;   // exposed for js/sampler.js
+    const CATALOGUE = window.CATALOGUE;
 
     let activeNo = null;
     const $ = (id) => document.getElementById(id);
@@ -684,7 +565,5 @@
     select(CATALOGUE[0].no);
   })();
   </script>
-  <script src="https://cdn.jsdelivr.net/npm/tone@15/build/Tone.js"></script>
-  <script src="js/sampler.js"></script>
 </body>
 </html>

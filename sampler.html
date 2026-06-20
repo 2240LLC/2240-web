@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="2240 Sampler — beat- and key-matched live sampling across the 2240 archive.">
+  <title>2240 — Sampler</title>
+  <link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+  <link rel="mask-icon" href="assets/favicon.svg" color="#0a0a0a">
+  <script>
+    (function () { try { var t = localStorage.getItem('theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {} })();
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    @font-face { font-family: 'ChicagoFLF'; font-style: normal; font-weight: 400; font-display: swap;
+      src: url('https://cdn.jsdelivr.net/gh/sakofchit/system.css@main/fonts/ChicagoFLF.woff2') format('woff2'),
+           url('https://cdn.jsdelivr.net/gh/sakofchit/system.css@main/fonts/ChicagoFLF.woff') format('woff'); }
+  </style>
+  <style>
+    :root {
+      --mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+      --display: "ChicagoFLF", "IBM Plex Mono", ui-monospace, Menlo, monospace;
+      --fg: rgb(var(--fg-rgb)); --fg-dim: rgba(var(--fg-rgb), 0.50); --fg-faint: rgba(var(--fg-rgb), 0.22); --rule: rgba(var(--fg-rgb), 0.14);
+    }
+    :root { --fg-rgb: 239,239,239; --bg: #0a0a0a; }
+    @media (prefers-color-scheme: light) { :root { --fg-rgb: 22,22,20; --bg: #f1efe8; } }
+    :root[data-theme="dark"]  { --fg-rgb: 239,239,239; --bg: #0a0a0a; }
+    :root[data-theme="light"] { --fg-rgb: 22,22,20;    --bg: #f1efe8; }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-font-smoothing: antialiased; }
+    body { background: var(--bg); color: var(--fg); font-family: var(--mono); min-height: 100vh;
+           display: flex; flex-direction: column; position: relative; overflow-x: hidden;
+           transition: background 0.3s ease, color 0.3s ease; }
+    #netgraph { position: fixed; inset: 0; z-index: 0; pointer-events: none; opacity: 0.55; }
+    .reg { position: fixed; width: 9px; height: 9px; z-index: 4; pointer-events: none; }
+    .reg::before, .reg::after { content:''; position:absolute; background: var(--fg-faint); }
+    .reg::before { left: 4px; top: 0; width: 1px; height: 9px; }
+    .reg::after  { top: 4px; left: 0; width: 9px; height: 1px; }
+    .reg-tl { top: 14px; left: 14px; } .reg-tr { top: 14px; right: 14px; }
+    .reg-bl { bottom: 14px; left: 14px; } .reg-br { bottom: 14px; right: 14px; }
+
+    .shell { position: relative; z-index: 2; flex: 1; width: 100%; max-width: 1040px; margin: 0 auto; padding: 0 30px; display: flex; flex-direction: column; }
+    .topbar { display: flex; align-items: baseline; justify-content: space-between; padding: 30px 0 0; }
+    .wordmark { display: inline-flex; align-items: center; }
+    .logo-mark { display: inline-block; flex-shrink: 0; background-color: var(--fg);
+      -webkit-mask: url('assets/logo-2240.svg') no-repeat center / contain; mask: url('assets/logo-2240.svg') no-repeat center / contain; }
+    .logo-wordmark { width: 84px; aspect-ratio: 301 / 113; }
+    .logo-foot { width: 38px; height: 14px; background-color: var(--fg-dim); }
+    .topbar-right { display: flex; align-items: center; gap: 14px; }
+    .nav-link { font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-dim);
+                text-decoration: none; border: 1px solid var(--rule); padding: 6px 9px; transition: color 0.15s, border-color 0.15s; }
+    .nav-link:hover { color: var(--fg); border-color: var(--fg-dim); }
+    .theme-toggle { font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-dim);
+                    cursor: pointer; background: none; border: 1px solid var(--rule); padding: 6px 9px; display: inline-flex; align-items: center; gap: 7px;
+                    transition: color 0.15s, border-color 0.15s; }
+    .theme-toggle:hover { color: var(--fg); border-color: var(--fg-dim); }
+    .theme-toggle .glyph { width: 9px; height: 9px; flex-shrink: 0; }
+
+    .foot { position: relative; z-index: 2; max-width: 1040px; margin: 40px auto 0; width: 100%; padding: 18px 30px 28px;
+            display: flex; justify-content: space-between; align-items: center; border-top: 1px solid var(--rule);
+            font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); }
+    .foot a { color: var(--fg-dim); text-decoration: none; }
+    .foot a:hover { color: var(--fg); }
+
+    /* ── Sampler (full page) ──────────────────────────────────────── */
+    .sampler-page { flex: 1; padding: 26px 0 8px; }
+    .sampler-masthead { display: flex; align-items: baseline; gap: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
+    .sampler-h1 { font-family: var(--display); font-size: clamp(28px, 5vw, 50px); }
+    .sam-lcd { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sam-bar { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
+    .sam-select { font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em; color: var(--fg); background: none; border: 1px solid var(--rule); padding: 7px 9px; cursor: pointer; }
+    .sam-select option { background: var(--bg); color: var(--fg); }
+    .sam-trigmode { display: inline-flex; border: 1px solid var(--rule); }
+    .sam-seg { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-dim); background: none; border: none; padding: 7px 12px; cursor: pointer; }
+    .sam-seg + .sam-seg { border-left: 1px solid var(--rule); }
+    .sam-seg.active { color: var(--bg); background: var(--fg); }
+    .sam-seg:hover:not(.active) { color: var(--fg); }
+    .sam-stopbtn { font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-dim); background: none; border: 1px solid var(--rule); padding: 7px 14px; cursor: pointer; margin-left: auto; }
+    .sam-stopbtn:hover { color: var(--fg); border-color: var(--fg-dim); }
+    .sam-wave-wrap { position: relative; width: 100%; height: clamp(220px, 42vh, 380px); cursor: crosshair; border: 1px solid var(--rule); margin-top: 12px; }
+    #sam-wave { display: block; width: 100%; height: 100%; }
+    .sam-controls { display: flex; flex-wrap: wrap; gap: 16px 0; margin-top: 18px; align-items: center; }
+    .sam-group { display: flex; align-items: center; gap: 12px; padding: 0 22px; border-right: 1px solid var(--rule); }
+    .sam-group:first-child { padding-left: 0; }
+    .sam-group:last-child { border-right: none; }
+    .sam-group-label { font-family: var(--mono); font-size: 8px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fg-faint); }
+    .sam-ctl { display: flex; align-items: center; gap: 10px; font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-dim); }
+    .sam-ctl input[type=range] { width: 130px; accent-color: var(--fg); }
+    .sam-ctl-val { color: var(--fg); font-variant-numeric: tabular-nums; min-width: 42px; }
+    .sam-num { font-family: var(--mono); font-size: 11px; color: var(--fg); background: none; border: 1px solid var(--rule); padding: 5px 6px; width: 56px; text-align: center; }
+    .sam-tgl { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-dim); background: none; border: 1px solid var(--rule); padding: 6px 11px; cursor: pointer; align-self: center; transition: color 0.15s, background 0.15s, border-color 0.15s; }
+    .sam-tgl.active { color: var(--bg); background: var(--fg); border-color: var(--fg); }
+    .sam-tgl:hover:not(.active) { color: var(--fg); border-color: var(--fg-dim); }
+    .sam-hint { margin-top: 16px; font-size: 9px; letter-spacing: 0.08em; line-height: 1.7; color: var(--fg-faint); max-width: 760px; }
+  </style>
+</head>
+<body>
+  <svg id="netgraph" preserveAspectRatio="none" aria-hidden="true"></svg>
+  <div class="reg reg-tl"></div><div class="reg reg-tr"></div>
+  <div class="reg reg-bl"></div><div class="reg reg-br"></div>
+
+  <div class="shell">
+    <header class="topbar">
+      <a href="/" class="wordmark" aria-label="2240 — home"><span class="logo-mark logo-wordmark" role="img" aria-label="2240"></span></a>
+      <div class="topbar-right">
+        <a href="/" class="nav-link">← Archive</a>
+        <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Theme: system" title="Switch theme">
+          <svg class="glyph" viewBox="0 0 10 10" aria-hidden="true" id="theme-glyph"></svg>
+          <span id="theme-label">System</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="sampler-page" id="sampler" aria-label="Sampler">
+      <div class="sampler-masthead">
+        <h1 class="sampler-h1">Sampler</h1>
+        <span id="sam-lcd" class="sam-lcd"></span>
+      </div>
+      <div class="sam-bar">
+        <select id="sam-source" class="sam-select" aria-label="Sample source"></select>
+        <div class="sam-trigmode" role="group" aria-label="Trigger mode">
+          <button type="button" class="sam-seg active" data-mode="latch" aria-pressed="true">Latch</button>
+          <button type="button" class="sam-seg" data-mode="hold" aria-pressed="false">Hold</button>
+        </div>
+        <button type="button" id="sam-stop" class="sam-stopbtn">Stop</button>
+      </div>
+      <div class="sam-wave-wrap" id="sam-wave-wrap">
+        <canvas id="sam-wave" role="img" aria-label="Sample waveform"></canvas>
+      </div>
+      <div class="sam-controls">
+        <div class="sam-group">
+          <span class="sam-group-label">Tempo</span>
+          <span class="sam-ctl"><span>Song</span><span id="sam-songbpm" class="sam-ctl-val">— BPM</span></span>
+          <button type="button" class="sam-tgl" id="sam-half" title="Halve the song's detected tempo (fix octave error)">÷2</button>
+          <button type="button" class="sam-tgl" id="sam-double" title="Double the song's detected tempo (fix octave error)">×2</button>
+          <label class="sam-ctl"><span>Master</span><input type="number" id="sam-bpm" class="sam-num" min="40" max="240" step="1" value="120" aria-label="Master BPM"></label>
+          <button type="button" class="sam-tgl" id="sam-setmaster" title="Set the master tempo &amp; key from the selected song">Set master</button>
+        </div>
+        <div class="sam-group">
+          <span class="sam-group-label">Key</span>
+          <span class="sam-ctl"><span>Master</span><span id="sam-key" class="sam-ctl-val">—</span></span>
+          <button type="button" class="sam-tgl active" id="sam-keymatch" aria-pressed="true">Key match</button>
+          <label class="sam-ctl"><span>Pitch</span><input type="range" id="sam-pitch" min="-12" max="12" step="1" value="0" aria-label="Pitch in semitones"><span id="sam-pitch-val" class="sam-ctl-val">+0 st</span></label>
+        </div>
+        <div class="sam-group">
+          <span class="sam-group-label">Grid</span>
+          <button type="button" class="sam-tgl active" id="sam-quant" aria-pressed="true">Quantize</button>
+          <label class="sam-ctl"><span>Snap</span><select id="sam-grid" class="sam-select"><option value="16n">1/16</option><option value="8n">1/8</option><option value="4n" selected>1/4</option><option value="2n">1/2</option><option value="1m">Bar</option></select></label>
+        </div>
+        <div class="sam-group">
+          <span class="sam-group-label">Mix</span>
+          <label class="sam-ctl"><span>Volume</span><input type="range" id="sam-vol" min="0" max="1" step="0.01" value="1" aria-label="Volume"><span id="sam-vol-val" class="sam-ctl-val">100%</span></label>
+        </div>
+      </div>
+      <p class="sam-hint">Click drops a loop one grid-step long · drag a loop’s edge to resize, its body to move · click a loop’s × or right-click it to remove · Stop clears all · scroll to zoom · ⇧-click sets the downbeat · ÷2/×2 fix octave · ⌥-click resets zoom</p>
+    </main>
+  </div>
+
+  <footer class="foot">
+    <span style="display:inline-flex;align-items:center;gap:9px;"><span class="logo-mark logo-foot" role="img" aria-label="2240"></span>© 2026</span>
+    <span><a href="mailto:tobybrown@2240.us">tobybrown@2240.us</a></span>
+  </footer>
+
+  <script src="js/catalogue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tone@15/build/Tone.js"></script>
+  <script src="js/sampler.js"></script>
+  <script>
+  (function () {
+    const $ = id => document.getElementById(id);
+    const THEMES = ['system', 'light', 'dark'];
+    const GLYPHS = {
+      system: '<circle cx="5" cy="5" r="4" fill="none" stroke="currentColor" stroke-width="1"/><path d="M5 1 a4 4 0 0 1 0 8 z" fill="currentColor"/>',
+      light: '<circle cx="5" cy="5" r="2.3" fill="currentColor"/><g stroke="currentColor" stroke-width="1"><path d="M5 0v1.4M5 8.6V10M0 5h1.4M8.6 5H10M1.5 1.5l1 1M7.5 7.5l1 1M8.5 1.5l-1 1M1.5 8.5l1-1"/></g>',
+      dark: '<path d="M7.5 6.2A3.6 3.6 0 1 1 4.2 1.6 2.9 2.9 0 0 0 7.5 6.2z" fill="currentColor"/>'
+    };
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const curTheme = () => { try { return localStorage.getItem('theme') || 'system'; } catch (e) { return 'system'; } };
+    function applyTheme(t) {
+      if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+      else document.documentElement.removeAttribute('data-theme');
+      const g = $('theme-glyph'), l = $('theme-label');
+      if (g) g.innerHTML = GLYPHS[t]; if (l) l.textContent = t.charAt(0).toUpperCase() + t.slice(1);
+      drawNet();
+    }
+    function setTheme(t) { try { localStorage.setItem('theme', t); } catch (e) {} applyTheme(t); }
+    const tg = $('theme-toggle');
+    if (tg) tg.addEventListener('click', () => setTheme(THEMES[(THEMES.indexOf(curTheme()) + 1) % 3]));
+    mq.addEventListener('change', () => { if (curTheme() === 'system') drawNet(); });
+    function drawNet() {
+      const svg = $('netgraph'); if (!svg) return;
+      const W = window.innerWidth, H = window.innerHeight;
+      svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+      const NS = 'http://www.w3.org/2000/svg'; svg.innerHTML = '';
+      let s = 2240; const rnd = () => (s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff;
+      const pts = [], N = Math.max(16, Math.round((W * H) / 52000));
+      for (let i = 0; i < N; i++) pts.push({ x: rnd() * W, y: rnd() * H, r: 1 + rnd() * 1.6 });
+      const fg = (getComputedStyle(document.documentElement).getPropertyValue('--fg-rgb').trim()) || '239,239,239';
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i];
+        pts.map((b, j) => ({ j, d: (a.x - b.x) ** 2 + (a.y - b.y) ** 2 })).filter(o => o.j !== i).sort((u, v) => u.d - v.d).slice(0, 2)
+          .forEach(o => { if (o.j > i) { const b = pts[o.j]; const ln = document.createElementNS(NS, 'line'); ln.setAttribute('x1', a.x); ln.setAttribute('y1', a.y); ln.setAttribute('x2', b.x); ln.setAttribute('y2', b.y); ln.setAttribute('stroke', 'rgba(' + fg + ',0.07)'); ln.setAttribute('stroke-width', '1'); svg.appendChild(ln); } });
+      }
+      pts.forEach(p => { const c = document.createElementNS(NS, 'circle'); c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r', p.r); c.setAttribute('fill', 'rgba(' + fg + ',0.12)'); svg.appendChild(c); });
+    }
+    let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(drawNet, 150); });
+    applyTheme(curTheme()); drawNet();
+  })();
+  </script>
+</body>
+</html>
