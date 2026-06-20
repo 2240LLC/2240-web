@@ -295,44 +295,77 @@
   // ── Slice interaction + zoom/pan ────────────────────────────────────────────
   function wireSlice() {
     const wrap = document.getElementById('sam-wave-wrap');
-    let drag = null; const THRESH = 0.008;
+    let drag = null; const THRESH = 0.008, EDGE = 7;
     const fracAt = (e) => { const r = wrap.getBoundingClientRect(); return clamp01((e.clientX - r.left) / r.width); };
+    const cssW = () => wrap.getBoundingClientRect().width || 1;
+    const xOfCss = (t) => ((t - viewStart) / ((viewEnd - viewStart) || 1)) * cssW();
+    function hitTest(cx) {
+      const vis = voices.filter(v => v.srcId === activeId);
+      for (let i = vis.length - 1; i >= 0; i--) {
+        const v = vis[i], sx = xOfCss(v.loopStart), ex = xOfCss(v.loopEnd);
+        if (Math.abs(cx - sx) <= EDGE) return { v, mode: 'resize', edge: 'start' };
+        if (Math.abs(cx - ex) <= EDGE) return { v, mode: 'resize', edge: 'end' };
+        if (cx > sx && cx < ex) return { v, mode: 'move' };
+      }
+      return null;
+    }
     wrap.addEventListener('pointerdown', (e) => {
       if (!cur) return;
       if (e.altKey) { resetView(); computeBars(); e.preventDefault(); return; }
       if (e.shiftKey) { const g = gridSec() || 0.05, tt = timeAt(fracAt(e)); cur.phase = tt - Math.floor(tt / g) * g; renderWave(); e.preventDefault(); return; }
-      const rect = wrap.getBoundingClientRect(), cx = e.clientX - rect.left, cy = e.clientY - rect.top, Wc = rect.width, vlc = (viewEnd - viewStart) || 1;
+      const rect = wrap.getBoundingClientRect(), cx = e.clientX - rect.left, cy = e.clientY - rect.top, Wc = rect.width, vlc = (viewEnd - viewStart) || 1, dur = cur.audioBuffer.duration;
       const del = voices.filter(v => v.srcId === activeId).reverse().find(v => {
         const x1 = ((v.loopStart - viewStart) / vlc) * Wc, bx = Math.max(0, Math.min(x1, Wc - 15));
         return cx >= bx - 1 && cx <= bx + 17 && cy <= 17;
       });
       if (del) { stopVoice(del); renderWave(); e.preventDefault(); return; }
-      const dur = cur.audioBuffer.duration, f = fracAt(e), t = snap(timeAt(f));
-      const u = snapSec() || 0.05;
-      const en = Math.min(t + u, dur);
-      const sc = Math.min(t, Math.max(0, en - u));
-      const voice = trigger(sc, en - sc, { loop: true });
-      drag = { anchor: t, voice, moved: false, downF: f };
+      const f = fracAt(e), hit = hitTest(cx);
+      if (hit) {
+        drag = { mode: hit.mode, voice: hit.v, edge: hit.edge, len: hit.v.loopEnd - hit.v.loopStart, grabT: timeAt(f) - hit.v.loopStart, moved: false };
+        wrap.style.cursor = hit.mode === 'resize' ? 'ew-resize' : 'grabbing';
+      } else {
+        const t = snap(timeAt(f)), u = snapSec() || 0.05;
+        const en = Math.min(t + u, dur), sc = Math.min(t, Math.max(0, en - u));
+        const voice = trigger(sc, en - sc, { loop: true });
+        drag = { mode: 'create', anchor: t, voice, moved: false, downF: f };
+      }
       isDragging = true;
       try { wrap.setPointerCapture(e.pointerId); } catch (_) {}
       e.preventDefault();
     });
     wrap.addEventListener('pointermove', (e) => {
-      if (!drag || !cur) return;
-      const dur = cur.audioBuffer.duration, f = fracAt(e);
+      const rect = wrap.getBoundingClientRect(), cx = e.clientX - rect.left;
+      if (!drag) {
+        if (!cur) return;
+        const h = hitTest(cx);
+        wrap.style.cursor = h ? (h.mode === 'resize' ? 'ew-resize' : 'grab') : 'crosshair';
+        return;
+      }
+      if (!cur) return;
+      const dur = cur.audioBuffer.duration, f = fracAt(e), u = snapSec() || 0.05, v = drag.voice;
       if (Math.abs(f - drag.downF) > THRESH) drag.moved = true;
-      if (!drag.moved) return;
-      const g = snapSec() || 0.05, t2 = snap(timeAt(f));
-      let sc = Math.min(drag.anchor, t2), en = Math.max(drag.anchor, t2);
-      if (en - sc < g) en = Math.min(sc + g, dur);
-      drag.voice.loopStart = sc; drag.voice.loopEnd = en;
-      drag.voice.gp.loopStart = sc; drag.voice.gp.loopEnd = en;
-      renderWave();
+      if (drag.mode === 'resize') {
+        const t = snap(timeAt(f));
+        if (drag.edge === 'start') v.loopStart = Math.max(0, Math.min(t, v.loopEnd - u));
+        else v.loopEnd = Math.min(dur, Math.max(t, v.loopStart + u));
+        v.gp.loopStart = v.loopStart; v.gp.loopEnd = v.loopEnd; renderWave();
+      } else if (drag.mode === 'move') {
+        let ns = snap(timeAt(f) - drag.grabT);
+        ns = Math.max(0, Math.min(ns, dur - drag.len));
+        v.loopStart = ns; v.loopEnd = ns + drag.len;
+        v.gp.loopStart = ns; v.gp.loopEnd = ns + drag.len; renderWave();
+      } else {
+        if (!drag.moved) return;
+        const t2 = snap(timeAt(f));
+        let sc = Math.min(drag.anchor, t2), en = Math.max(drag.anchor, t2);
+        if (en - sc < u) en = Math.min(sc + u, dur);
+        v.loopStart = sc; v.loopEnd = en; v.gp.loopStart = sc; v.gp.loopEnd = en; renderWave();
+      }
     });
     const end = () => {
       if (!drag) return;
-      if (!latch && drag.voice) stopVoice(drag.voice);
-      drag = null; isDragging = false; renderWave();
+      if (drag.mode === 'create' && !latch && drag.voice) stopVoice(drag.voice);
+      drag = null; isDragging = false; wrap.style.cursor = 'crosshair'; renderWave();
     };
     wrap.addEventListener('pointerup', end);
     wrap.addEventListener('pointercancel', end);
