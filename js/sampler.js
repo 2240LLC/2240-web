@@ -18,6 +18,7 @@
   let activeId = SOURCES[0].id;
   let semis = 0, volume = 1.0, masterBPM = 120, masterSet = false;
   let voices = [];                // { gp, looping, loopStart, loopEnd, t0, posAtT0, rate }
+  let latch = true;               // default trigger mode: latch (toggle)
   let out = null;
   let bars = [];
 
@@ -175,11 +176,20 @@
       if (!cur) return;
       const rect = wrap.getBoundingClientRect();
       const f = Math.max(0, Math.min((e.clientX - rect.left) / rect.width, 1));
-      const startSec = f * cur.audioBuffer.duration;
-      const v = trigger(startSec, cur.audioBuffer.duration - startSec, { loop: true });
-      if (!v) return;
-      const up = () => { stopVoice(v); renderWave(); window.removeEventListener('pointerup', up); };
-      window.addEventListener('pointerup', up);
+      const dur = cur.audioBuffer.duration;
+      const startSec = f * dur;
+      if (latch) {
+        // Toggle: click near an existing latched loop's start stops it; otherwise start one.
+        const near = voices.find(v => Math.abs(v.loopStart / dur - f) < 0.02);
+        if (near) { stopVoice(near); renderWave(); }
+        else { trigger(startSec, dur - startSec, { loop: true }); }
+      } else {
+        const v = trigger(startSec, dur - startSec, { loop: true });
+        if (v) {
+          const uph = () => { stopVoice(v); renderWave(); window.removeEventListener('pointerup', uph); };
+          window.addEventListener('pointerup', uph);
+        }
+      }
       e.preventDefault();
     });
   }
@@ -187,6 +197,11 @@
   // ── Controls ────────────────────────────────────────────────────────────────
   const fmtSemis = n => (n > 0 ? '+' : '') + n + ' st';
   function wireControls() {
+    const segs = section.querySelectorAll('.sam-seg');
+    segs.forEach(b => b.addEventListener('click', () => {
+      latch = b.dataset.mode === 'latch';
+      segs.forEach(x => { const on = x === b; x.classList.toggle('active', on); x.setAttribute('aria-pressed', on ? 'true' : 'false'); });
+    }));
     const tog = document.getElementById('sam-toggle');
     if (tog) tog.addEventListener('click', () => {
       const open = section.classList.toggle('open');

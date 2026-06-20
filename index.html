@@ -215,8 +215,14 @@
     .sam-lcd { flex: 1; font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-dim);
                white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: left; }
     .sam-stopbtn { font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
-                   color: var(--fg-dim); background: none; border: 1px solid var(--rule); padding: 6px 12px; cursor: pointer; }
+                   color: var(--fg-dim); background: none; border: 1px solid var(--rule); padding: 6px 12px; cursor: pointer; margin-left: auto; }
     .sam-stopbtn:hover { color: var(--fg); border-color: var(--fg-dim); }
+    .sam-trigmode { display: inline-flex; border: 1px solid var(--rule); }
+    .sam-seg { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+               color: var(--fg-dim); background: none; border: none; padding: 6px 11px; cursor: pointer; }
+    .sam-seg + .sam-seg { border-left: 1px solid var(--rule); }
+    .sam-seg.active { color: var(--bg); background: var(--fg); }
+    .sam-seg:hover:not(.active) { color: var(--fg); }
     .sam-wave-wrap { position: relative; width: 100%; height: 116px; cursor: crosshair; border: 1px solid var(--rule); }
     #sam-wave { display: block; width: 100%; height: 100%; }
     .sam-controls { display: flex; flex-wrap: wrap; gap: 28px; margin-top: 14px; }
@@ -373,6 +379,10 @@
       <div class="sam-panel" id="sam-panel">
         <div class="sam-bar">
           <select id="sam-source" class="sam-select" aria-label="Sample source"></select>
+          <div class="sam-trigmode" role="group" aria-label="Trigger mode">
+            <button type="button" class="sam-seg active" data-mode="latch" aria-pressed="true">Latch</button>
+            <button type="button" class="sam-seg" data-mode="hold" aria-pressed="false">Hold</button>
+          </div>
           <button type="button" id="sam-stop" class="sam-stopbtn">Stop</button>
         </div>
         <div class="sam-wave-wrap" id="sam-wave-wrap">
@@ -383,7 +393,7 @@
           <label class="sam-ctl"><span>Pitch</span><input type="range" id="sam-pitch" min="-12" max="12" step="1" value="0" aria-label="Pitch in semitones"><span id="sam-pitch-val" class="sam-ctl-val">+0 st</span></label>
           <label class="sam-ctl"><span>Volume</span><input type="range" id="sam-vol" min="0" max="1" step="0.01" value="1" aria-label="Volume"><span id="sam-vol-val" class="sam-ctl-val">100%</span></label>
         </div>
-        <p class="sam-hint">Click the waveform to trigger from that point · hold to loop · polyphonic</p>
+        <p class="sam-hint">Latch: click to start a loop, click it again to stop · Hold: press &amp; hold · Stop clears all · polyphonic</p>
       </div>
     </div>
   </aside>
