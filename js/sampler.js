@@ -255,6 +255,13 @@
       g.fillStyle = `rgba(${fg},0.45)`;
       if (x1 >= 0 && x1 <= W) g.fillRect(Math.round(x1), 0, Math.max(1, dpr), H);
       if (x2 >= 0 && x2 <= W) g.fillRect(Math.round(x2) - Math.max(1, dpr), 0, Math.max(1, dpr), H);
+      const bs = 15 * dpr, bx = Math.max(0, Math.min(Math.round(x1), W - bs)), pad = 4 * dpr;
+      g.fillStyle = `rgba(${fg},0.22)`; g.fillRect(bx, 0, bs, bs);
+      g.strokeStyle = `rgba(${fg},0.9)`; g.lineWidth = Math.max(1, dpr);
+      g.beginPath();
+      g.moveTo(bx + pad, pad); g.lineTo(bx + bs - pad, bs - pad);
+      g.moveTo(bx + bs - pad, pad); g.lineTo(bx + pad, bs - pad);
+      g.stroke();
     });
     if (cur && vis.length) vis.forEach(v => {
       const x = xOf(voicePos(v, now)); if (x < 0 || x > W) return;
@@ -284,17 +291,18 @@
       if (!cur) return;
       if (e.altKey) { resetView(); computeBars(); e.preventDefault(); return; }
       if (e.shiftKey) { const g = gridSec() || 0.05, tt = timeAt(fracAt(e)); cur.phase = tt - Math.floor(tt / g) * g; renderWave(); e.preventDefault(); return; }
-      const dur = cur.audioBuffer.duration, f = fracAt(e), tAbs = timeAt(f), t = snap(tAbs);
-      let toggle = null;
-      if (latch) toggle = voices.find(v => v.srcId === activeId && tAbs >= v.loopStart && tAbs <= v.loopEnd) || null;
-      let voice = null;
-      if (!toggle) {
-        const g = gridSec(), len = g ? Math.min(4 * g, dur - t) : (dur - t);
-        const en = Math.min(t + Math.max(len, g || 0.05), dur);
-        const sc = Math.min(t, Math.max(0, en - (g || 0.05)));
-        voice = trigger(sc, en - sc, { loop: true });
-      }
-      drag = { anchor: t, voice, toggle, moved: false, downF: f };
+      const rect = wrap.getBoundingClientRect(), cx = e.clientX - rect.left, cy = e.clientY - rect.top, Wc = rect.width, vlc = (viewEnd - viewStart) || 1;
+      const del = voices.filter(v => v.srcId === activeId).reverse().find(v => {
+        const x1 = ((v.loopStart - viewStart) / vlc) * Wc, bx = Math.max(0, Math.min(x1, Wc - 15));
+        return cx >= bx - 1 && cx <= bx + 17 && cy <= 17;
+      });
+      if (del) { stopVoice(del); renderWave(); e.preventDefault(); return; }
+      const dur = cur.audioBuffer.duration, f = fracAt(e), t = snap(timeAt(f));
+      const g = gridSec(), len = g ? Math.min(4 * g, dur - t) : (dur - t);
+      const en = Math.min(t + Math.max(len, g || 0.05), dur);
+      const sc = Math.min(t, Math.max(0, en - (g || 0.05)));
+      const voice = trigger(sc, en - sc, { loop: true });
+      drag = { anchor: t, voice, moved: false, downF: f };
       isDragging = true;
       try { wrap.setPointerCapture(e.pointerId); } catch (_) {}
       e.preventDefault();
@@ -304,7 +312,6 @@
       const dur = cur.audioBuffer.duration, f = fracAt(e);
       if (Math.abs(f - drag.downF) > THRESH) drag.moved = true;
       if (!drag.moved) return;
-      if (!drag.voice) { drag.toggle = null; drag.voice = trigger(drag.anchor, gridSec() || 0.05, { loop: true }); }
       const g = gridSec() || 0.05, t2 = snap(timeAt(f));
       let sc = Math.min(drag.anchor, t2), en = Math.max(drag.anchor, t2);
       if (en - sc < g) en = Math.min(sc + g, dur);
@@ -314,12 +321,17 @@
     });
     const end = () => {
       if (!drag) return;
-      if (drag.toggle && !drag.moved) stopVoice(drag.toggle);
-      else if (!latch && drag.voice) stopVoice(drag.voice);
+      if (!latch && drag.voice) stopVoice(drag.voice);
       drag = null; isDragging = false; renderWave();
     };
     wrap.addEventListener('pointerup', end);
     wrap.addEventListener('pointercancel', end);
+    wrap.addEventListener('contextmenu', (e) => {
+      if (!cur) return; e.preventDefault();
+      const rect = wrap.getBoundingClientRect(), tAbs = timeAt(clamp01((e.clientX - rect.left) / rect.width));
+      const hit = voices.filter(v => v.srcId === activeId).reverse().find(v => tAbs >= v.loopStart && tAbs <= v.loopEnd);
+      if (hit) { stopVoice(hit); renderWave(); }
+    });
 
     // Zoom (scroll / pinch, centred on cursor) + pan (shift-scroll or horizontal).
     wrap.addEventListener('wheel', (e) => {
