@@ -128,12 +128,6 @@
       const key = detectKey(audioBuffer);
       const e = { tb, audioBuffer, bpm, keyPc: key ? key.pc : null, keyName: key ? key.name : '—' };
       cache.set(id, e); cur = e;
-      if (!masterSet && bpm) {
-        masterBPM = bpm; masterSet = true;
-        const bi = document.getElementById('sam-bpm'); if (bi) bi.value = masterBPM;
-        try { Tone.getTransport().bpm.value = masterBPM; } catch (_) {}
-      }
-      if (masterKey == null && e.keyPc != null) { masterKey = e.keyPc; updateMasterKeyUI(); }
       computeBars();
       return e;
     } catch (err) {
@@ -142,6 +136,18 @@
     }
   }
   function updateMasterKeyUI() { const el = document.getElementById('sam-key'); if (el) el.textContent = masterKey != null ? NOTE[masterKey] : '—'; }
+  function reconformVoices() {
+    const now = nowt();
+    voices.forEach(v => { const nr = rateFor(v.bpm); v.posAtT0 = voicePos(v, now); v.t0 = now; v.rate = nr; v.gp.playbackRate = nr; v.gp.detune = detuneFor(v.keyPc); });
+  }
+  // Master clock/key follow the currently selected source; layers re-conform to it.
+  function setMasterFromCur() {
+    if (!cur) return;
+    if (cur.bpm) { masterBPM = cur.bpm; const bi = document.getElementById('sam-bpm'); if (bi) bi.value = masterBPM; try { Tone.getTransport().bpm.value = masterBPM; } catch (_) {} }
+    if (cur.keyPc != null) masterKey = cur.keyPc;
+    updateMasterKeyUI();
+    reconformVoices();
+  }
 
   // ── Trigger / stop ──────────────────────────────────────────────────────────
   function trigger(startSec, durSec, opts) {
@@ -304,7 +310,7 @@
     });
     document.getElementById('sam-source').addEventListener('change', async (e) => {
       activeId = e.target.value;
-      await load(activeId); setLcd(); renderWave();
+      await load(activeId); setMasterFromCur(); setLcd(); renderWave();
     });
     const pe = document.getElementById('sam-pitch');
     pe.addEventListener('input', () => {
@@ -353,7 +359,7 @@
     const sel = document.getElementById('sam-source');
     sel.innerHTML = SOURCES.map(s => `<option value="${s.id}">${s.label} — ${s.artist}</option>`).join('');
     wireSlice(); wireControls();
-    await load(activeId); setLcd();
+    await load(activeId); setMasterFromCur(); setLcd();
   }
   init();
 })();
