@@ -31,7 +31,10 @@
   const ensureOut = () => (out || (out = new Tone.Gain(volume).toDestination()));
   const clamp01 = x => Math.max(0, Math.min(x, 1));
   const gridSec = () => (cur && cur.bpm ? 60 / cur.bpm : null);
-  const snap = (t) => { const dur = cur.audioBuffer.duration, g = gridSec(); if (!g) return Math.max(0, Math.min(t, dur)); const ph = cur.phase || 0; const v = ph + Math.round((t - ph) / g) * g; return Math.max(0, Math.min(v, dur)); };
+  const SNAP_BEATS = { '16n': 0.25, '8n': 0.5, '4n': 1, '2n': 2, '1m': 4 };
+  const snapBeats = () => SNAP_BEATS[quantGrid] || 1;
+  const snapSec = () => (cur && cur.bpm ? (60 / cur.bpm) * snapBeats() : null);
+  const snap = (t) => { const dur = cur.audioBuffer.duration, g = snapSec(); if (!g) return Math.max(0, Math.min(t, dur)); const ph = cur.phase || 0; const v = ph + Math.round((t - ph) / g) * g; return Math.max(0, Math.min(v, dur)); };
   const rateFor = (bpm) => (bpm ? masterBPM / bpm : 1);
   const timeAt = (f) => viewStart + f * (viewEnd - viewStart);
   function keyShift(pc) { if (!keyMatch || pc == null || masterKey == null) return 0; let d = (masterKey - pc) % 12; if (d > 6) d -= 12; if (d < -5) d += 12; return d; }
@@ -242,12 +245,13 @@
       g.fillRect(i * barW, (H - bh) / 2, dpr, bh);
     });
     if (cur && cur.bpm) {
-      const gs = 60 / cur.bpm, ph = cur.phase || 0, px = (gs / vl) * W;
+      const bpu = snapBeats(), u = (60 / cur.bpm) * bpu, ph = cur.phase || 0, px = (u / vl) * W;
       if (px >= 6 * dpr) {
-        let k = Math.floor((viewStart - ph) / gs);
-        for (let guard = 0; guard < 8000; k++, guard++) {
-          const t = ph + k * gs; if (t > viewEnd) break; if (t < viewStart) continue;
-          const x = Math.round(xOf(t)); const bar = (((k % 4) + 4) % 4) === 0;
+        let k = Math.floor((viewStart - ph) / u);
+        for (let guard = 0; guard < 9000; k++, guard++) {
+          const t = ph + k * u; if (t > viewEnd) break; if (t < viewStart) continue;
+          const x = Math.round(xOf(t)); const beats = k * bpu;
+          const bar = Math.abs((((beats % 4) + 4) % 4)) < 1e-6;
           g.fillStyle = `rgba(${fg},${bar ? 0.13 : 0.05})`; g.fillRect(x, 0, 1, H);
         }
       }
@@ -303,9 +307,10 @@
       });
       if (del) { stopVoice(del); renderWave(); e.preventDefault(); return; }
       const dur = cur.audioBuffer.duration, f = fracAt(e), t = snap(timeAt(f));
-      const g = gridSec(), len = g ? Math.min(4 * g, dur - t) : (dur - t);
-      const en = Math.min(t + Math.max(len, g || 0.05), dur);
-      const sc = Math.min(t, Math.max(0, en - (g || 0.05)));
+      const u = snapSec() || 0.05, bar = cur.bpm ? (60 / cur.bpm) * 4 : u;
+      const len = Math.min(bar, dur - t);
+      const en = Math.min(t + Math.max(len, u), dur);
+      const sc = Math.min(t, Math.max(0, en - u));
       const voice = trigger(sc, en - sc, { loop: true });
       drag = { anchor: t, voice, moved: false, downF: f };
       isDragging = true;
@@ -317,7 +322,7 @@
       const dur = cur.audioBuffer.duration, f = fracAt(e);
       if (Math.abs(f - drag.downF) > THRESH) drag.moved = true;
       if (!drag.moved) return;
-      const g = gridSec() || 0.05, t2 = snap(timeAt(f));
+      const g = snapSec() || 0.05, t2 = snap(timeAt(f));
       let sc = Math.min(drag.anchor, t2), en = Math.max(drag.anchor, t2);
       if (en - sc < g) en = Math.min(sc + g, dur);
       drag.voice.loopStart = sc; drag.voice.loopEnd = en;
