@@ -20,17 +20,15 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    /* Chicago FLF — faithful classic-Macintosh system face.
-       Loads from the local /fonts folder first; CDN is a fallback until those
-       files are added (see fonts/README.txt). */
+    /* Chicago FLF — faithful classic-Macintosh system face (loaded from CDN;
+       self-host the .woff2 into /fonts before launch for reliability). */
     @font-face {
       font-family: 'ChicagoFLF';
       font-style: normal;
       font-weight: 400;
       font-display: swap;
-      src: url('fonts/ChicagoFLF.woff2') format('woff2'),
-           url('fonts/ChicagoFLF.woff') format('woff'),
-           url('https://cdn.jsdelivr.net/gh/sakofchit/system.css@main/fonts/ChicagoFLF.woff2') format('woff2');
+      src: url('https://cdn.jsdelivr.net/gh/sakofchit/system.css@main/fonts/ChicagoFLF.woff2') format('woff2'),
+           url('https://cdn.jsdelivr.net/gh/sakofchit/system.css@main/fonts/ChicagoFLF.woff') format('woff');
     }
   </style>
   <style>
