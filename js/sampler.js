@@ -25,6 +25,7 @@
   let latch = true, isDragging = false;
   let voices = [];
   let out = null, bars = [];
+  let masterSplit = null, masterAnL = null, masterAnR = null, masterBuf = null, masterPhL = 0, masterPhR = 0;
   let viewStart = 0, viewEnd = 1;   // visible window in source seconds (zoom/pan)
 
   const nowt = () => Tone.getContext().currentTime;
@@ -190,6 +191,11 @@
     gp.grainSize = 0.1; gp.overlap = 0.05;
     const chGain = new Tone.Gain(1), pan = new Tone.Panner(0);
     gp.connect(chGain); chGain.connect(pan); pan.connect(ensureOut());
+    const _ac = Tone.getContext().rawContext || Tone.getContext();
+    const split = _ac.createChannelSplitter(2);
+    const anL = _ac.createAnalyser(), anR = _ac.createAnalyser();
+    anL.fftSize = 256; anR.fftSize = 256; anL.smoothingTimeConstant = 0.2; anR.smoothingTimeConstant = 0.2;
+    try { pan.connect(split); split.connect(anL, 0); split.connect(anR, 1); } catch (_) {}
     let t0;
     if (quantize) {
       const T = Tone.getTransport();
@@ -197,11 +203,11 @@
       t0 = T.nextSubdivision(quantGrid);
       gp.start(t0, startSec);
     } else { t0 = nowt(); gp.start(undefined, startSec); }
-    const v = { gp, gain: chGain, panner: pan, vol: 1, pan: 0, buf: cur.audioBuffer, srcId: activeId, bpm: cur.bpm, keyPc: cur.keyPc, looping: gp.loop, loopStart: startSec, loopEnd: startSec + durSec, t0, posAtT0: startSec, rate: r };
+    const v = { gp, gain: chGain, panner: pan, vol: 1, pan: 0, buf: cur.audioBuffer, srcId: activeId, bpm: cur.bpm, keyPc: cur.keyPc, looping: gp.loop, loopStart: startSec, loopEnd: startSec + durSec, t0, posAtT0: startSec, rate: r, anL, anR, meterBuf: new Float32Array(256), phL: 0, phR: 0 };
     voices.push(v); createStrip(v); startAnim();
     return v;
   }
-  function stopVoice(v) { try { v.gp.stop(); v.gp.dispose(); if (v.gain) v.gain.dispose(); if (v.panner) v.panner.dispose(); } catch (_) {} if (v.strip) v.strip.remove(); voices = voices.filter(x => x !== v); }
+  function stopVoice(v) { try { v.gp.stop(); v.gp.dispose(); if (v.gain) v.gain.dispose(); if (v.panner) v.panner.dispose(); if (v.anL) v.anL.disconnect(); if (v.anR) v.anR.disconnect(); } catch (_) {} if (v.strip) v.strip.remove(); voices = voices.filter(x => x !== v); }
   function stopAll() { voices.slice().forEach(stopVoice); renderWave(); }
 
   function voicePos(v, now) {
@@ -282,7 +288,7 @@
   }
   let rafId = null;
   function startAnim() { if (!rafId) loop(); }
-  function loop() { renderWave(); voices.forEach(renderThumb); rafId = voices.length ? requestAnimationFrame(loop) : null; }
+  function loop() { renderWave(); voices.forEach(v => { renderThumb(v); renderMeter(v); }); renderMasterMeter(); rafId = voices.length ? requestAnimationFrame(loop) : null; }
 
   // ── Channel strips (one per loop) ───────────────────────────────────────────
   function createStrip(v) {
@@ -292,7 +298,7 @@
       '<div class="strip-head"><span class="strip-name"></span><button type="button" class="strip-x" aria-label="Remove">×</button></div>' +
       '<canvas class="strip-thumb"></canvas>' +
       '<div class="strip-knob"><canvas class="strip-pan-knob"></canvas><span class="strip-cap">Pan</span></div>' +
-      '<canvas class="strip-fader-cv"></canvas>' +
+      '<div class="strip-fader-row"><canvas class="strip-fader-cv"></canvas><canvas class="strip-meter"></canvas></div>' +
       '<span class="strip-db">0.0 dB</span>';
     wrap.appendChild(el);
     v.strip = el;
@@ -360,6 +366,81 @@
   function updateDb(v) {
     const el = v.strip && v.strip.querySelector('.strip-db'); if (!el) return;
     el.textContent = v.vol <= 0.001 ? '−∞ dB' : (20 * Math.log10(v.vol)).toFixed(1) + ' dB';
+  }
+
+  // ── Metering (stereo, per channel + master) ──────────────────────────
+  function lvl(an, buf) {
+    an.getFloatTimeDomainData(buf);
+    let sum = 0, peak = 0;
+    for (let i = 0; i < buf.length; i++) { const x = buf[i], a = x < 0 ? -x : x; sum += x * x; if (a > peak) peak = a; }
+    const norm = v => Math.max(0, Math.min(1, (20 * Math.log10(v + 1e-7) + 60) / 60));
+    return { rms: norm(Math.sqrt(sum / buf.length)), peak: norm(peak) };
+  }
+  function paintMeter(cv, l, r, pl, pr) {
+    if (!cv) return;
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = Math.round((cv.offsetWidth || 16) * dpr); cv.height = Math.round((cv.offsetHeight || 120) * dpr);
+    const g = cv.getContext('2d'), fg = fgRGB(), W = cv.width, H = cv.height, gap = 2 * dpr, bw = (W - gap) / 2;
+    g.clearRect(0, 0, W, H);
+    [[0, l, pl], [bw + gap, r, pr]].forEach(([x, lev, ph]) => {
+      g.fillStyle = `rgba(${fg},0.10)`; g.fillRect(x, 0, bw, H);
+      const hh = lev * H; g.fillStyle = `rgba(${fg},0.55)`; g.fillRect(x, H - hh, bw, hh);
+      if (lev > 0.9) { g.fillStyle = `rgba(${fg},0.95)`; g.fillRect(x, 0, bw, H * 0.07); }
+      const py = H - ph * H; g.fillStyle = `rgba(${fg},0.9)`; g.fillRect(x, Math.min(H - dpr, Math.max(0, py)), bw, Math.max(dpr, 1.5 * dpr));
+    });
+  }
+  function renderMeter(v) {
+    const cv = v.strip && v.strip.querySelector('.strip-meter'); if (!cv || !v.anL) return;
+    const a = lvl(v.anL, v.meterBuf), b = lvl(v.anR, v.meterBuf);
+    v.phL = Math.max(a.peak, v.phL - 0.015); v.phR = Math.max(b.peak, v.phR - 0.015);
+    paintMeter(cv, a.rms, b.rms, v.phL, v.phR);
+  }
+  function setupMasterMeter() {
+    try {
+      const ac = Tone.getContext().rawContext || Tone.getContext();
+      ensureOut();
+      masterSplit = ac.createChannelSplitter(2);
+      masterAnL = ac.createAnalyser(); masterAnR = ac.createAnalyser();
+      masterAnL.fftSize = 256; masterAnR.fftSize = 256; masterAnL.smoothingTimeConstant = 0.2; masterAnR.smoothingTimeConstant = 0.2;
+      masterBuf = new Float32Array(256);
+      out.connect(masterSplit); masterSplit.connect(masterAnL, 0); masterSplit.connect(masterAnR, 1);
+    } catch (_) {}
+  }
+  function renderMasterMeter() {
+    const cv = document.getElementById('sam-master-meter'); if (!cv || !masterAnL) return;
+    const a = lvl(masterAnL, masterBuf), b = lvl(masterAnR, masterBuf);
+    masterPhL = Math.max(a.peak, masterPhL - 0.015); masterPhR = Math.max(b.peak, masterPhR - 0.015);
+    paintMeter(cv, a.rms, b.rms, masterPhL, masterPhR);
+  }
+
+  // ── Master fader ──────────────────────────────────────
+  function drawMasterFader() {
+    const cv = document.getElementById('sam-master-fader'); if (!cv) return;
+    const dpr = window.devicePixelRatio || 1; cv.width = Math.round((cv.offsetWidth || 30) * dpr); cv.height = Math.round((cv.offsetHeight || 120) * dpr);
+    const g = cv.getContext('2d'), fg = fgRGB(), cx = cv.width / 2, top = 8 * dpr, bot = cv.height - 8 * dpr, h = bot - top, y = bot - volume * h;
+    g.clearRect(0, 0, cv.width, cv.height); g.lineCap = 'round';
+    g.strokeStyle = `rgba(${fg},0.2)`; g.lineWidth = 2 * dpr; g.beginPath(); g.moveTo(cx, top); g.lineTo(cx, bot); g.stroke();
+    g.strokeStyle = `rgba(${fg},0.6)`; g.beginPath(); g.moveTo(cx, bot); g.lineTo(cx, y); g.stroke();
+    g.fillStyle = `rgba(${fg},0.92)`; g.fillRect(cx - 9 * dpr, y - 3 * dpr, 18 * dpr, 6 * dpr);
+  }
+  function updateMasterDb() {
+    const el = document.getElementById('sam-master-db'); if (!el) return;
+    el.textContent = volume <= 0.001 ? '−∞ dB' : (20 * Math.log10(volume)).toFixed(1) + ' dB';
+  }
+  function setMasterVol(x) {
+    volume = Math.max(0, Math.min(1, x));
+    if (out) out.gain.value = volume;
+    drawMasterFader(); updateMasterDb();
+  }
+  function wireMasterFader() {
+    const cv = document.getElementById('sam-master-fader'); if (!cv) return;
+    const setY = (clientY) => { const r = cv.getBoundingClientRect(), top = 8, bot = r.height - 8, h = bot - top; setMasterVol((bot - (clientY - r.top)) / h); };
+    cv.addEventListener('pointerdown', (e) => {
+      setY(e.clientY);
+      const mv = (ev) => setY(ev.clientY);
+      const up = () => { document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); };
+      document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); e.preventDefault();
+    });
   }
 
   // ── LCD ─────────────────────────────────────────────────────────────────────
@@ -499,12 +580,6 @@
       document.getElementById('sam-pitch-val').textContent = fmtSemis(val);
       voices.forEach(v => { if (v.srcId === activeId) v.gp.detune = voiceDetune(v); });
     });
-    const ve = document.getElementById('sam-vol');
-    ve.addEventListener('input', () => {
-      volume = parseFloat(ve.value);
-      document.getElementById('sam-vol-val').textContent = Math.round(volume * 100) + '%';
-      if (out) out.gain.value = volume;
-    });
     const be = document.getElementById('sam-bpm');
     if (be) be.addEventListener('input', () => {
       const val = parseInt(be.value, 10);
@@ -536,10 +611,10 @@
   }
 
   function repaintStrips() { voices.forEach(v => { computeThumb(v); drawPanKnob(v); drawFader(v); }); }
-  function onTheme() { renderWave(); repaintStrips(); }
+  function onTheme() { renderWave(); repaintStrips(); drawMasterFader(); }
   new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', onTheme);
-  let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { computeBars(); repaintStrips(); }, 150); });
+  let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { computeBars(); repaintStrips(); drawMasterFader(); }, 150); });
 
   // ── Init ────────────────────────────────────────────────────────────────────
   async function init() {
@@ -547,6 +622,7 @@
     const sel = document.getElementById('sam-source');
     sel.innerHTML = SOURCES.map(s => `<option value="${s.id}">${s.label} — ${s.artist}</option>`).join('');
     wireSlice(); wireControls();
+    setupMasterMeter(); wireMasterFader(); drawMasterFader(); updateMasterDb(); renderMasterMeter();
     await load(activeId); setMasterFromCur(); setLcd();
   }
   init();

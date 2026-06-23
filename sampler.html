@@ -128,7 +128,10 @@
 
     /* Mixer (primary focus) */
     .sam-mixer { flex: 1 1 auto; display: flex; flex-direction: column; gap: 10px; min-height: 240px; }
-    .sam-strips { flex: 1; display: flex; gap: 10px; padding: 4px 0 2px; overflow-x: auto; align-items: stretch; }
+    .sam-mixer-body { flex: 1 1 auto; display: flex; gap: 12px; min-height: 0; }
+    .sam-strip-master { flex: 0 0 92px; width: 92px; border-color: rgba(var(--fg-rgb), 0.32); background: rgba(var(--fg-rgb), 0.025); }
+    .sam-strip-master .strip-name { color: var(--fg); letter-spacing: 0.12em; }
+    .sam-strips { flex: 1 1 auto; min-width: 0; display: flex; gap: 10px; padding: 4px 0 2px; overflow-x: auto; align-items: stretch; }
     .sam-strips:empty::before { content: 'Trigger a loop to add a channel'; align-self: center; margin: auto; font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-faint); }
     .sam-strip { flex: 0 0 108px; width: 108px; display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 11px 9px; border: 1px solid var(--rule); }
     .strip-head { display: flex; align-items: center; gap: 4px; width: 100%; }
@@ -139,7 +142,9 @@
     .strip-knob { display: flex; flex-direction: column; align-items: center; gap: 3px; }
     .strip-pan-knob { width: 42px; height: 42px; cursor: ns-resize; }
     .strip-cap { font-size: 7px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); }
-    .strip-fader-cv { width: 38px; flex: 1 1 auto; min-height: 120px; cursor: ns-resize; }
+    .strip-fader-row { display: flex; align-items: stretch; justify-content: center; gap: 7px; width: 100%; flex: 1 1 auto; min-height: 120px; }
+    .strip-fader-cv { width: 30px; cursor: ns-resize; }
+    .strip-meter { width: 16px; }
     .strip-db { font-size: 8px; letter-spacing: 0.06em; color: var(--fg-dim); font-variant-numeric: tabular-nums; }
   </style>
 </head>
@@ -174,14 +179,6 @@
           <div class="sam-mod-row">
             <span id="sam-key" class="sam-hero">—</span>
             <button type="button" class="sam-tgl active" id="sam-keymatch" aria-pressed="true" title="Transpose loops to the master key">Match</button>
-          </div>
-        </div>
-
-        <div class="sam-mod">
-          <span class="sam-mod-label">Output</span>
-          <div class="sam-mod-row sam-slider">
-            <input type="range" id="sam-vol" min="0" max="1" step="0.01" value="1" aria-label="Master volume">
-            <span id="sam-vol-val" class="sam-val">100%</span>
           </div>
         </div>
 
@@ -233,7 +230,17 @@
           <span class="sam-section-title">Mixer</span>
           <span class="sam-section-sub">one channel per loop</span>
         </div>
-        <div class="sam-strips" id="sam-strips" aria-label="Channel strips"></div>
+        <div class="sam-mixer-body">
+          <div class="sam-strips" id="sam-strips" aria-label="Channel strips"></div>
+          <div class="sam-strip sam-strip-master" id="sam-master">
+            <div class="strip-head"><span class="strip-name">Master</span></div>
+            <div class="strip-fader-row">
+              <canvas class="strip-fader-cv" id="sam-master-fader"></canvas>
+              <canvas class="strip-meter" id="sam-master-meter"></canvas>
+            </div>
+            <span class="strip-db" id="sam-master-db">0.0 dB</span>
+          </div>
+        </div>
       </section>
     </main>
   </div>
