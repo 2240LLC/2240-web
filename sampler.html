@@ -66,46 +66,58 @@
     .foot a:hover { color: var(--fg); }
 
     /* ── Sampler (full page) ──────────────────────────────────────── */
-    .sampler-page { flex: 1; padding: 26px 0 8px; }
-    .sampler-masthead { display: flex; align-items: baseline; gap: 16px; padding-bottom: 12px; border-bottom: 1px solid var(--rule); }
-    .sampler-h1 { font-family: var(--display); font-size: clamp(28px, 5vw, 50px); }
-    .sam-lcd { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .sam-bar { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
-    .sam-select { font-family: var(--mono); font-size: 11px; letter-spacing: 0.05em; color: var(--fg); background: none; border: 1px solid var(--rule); padding: 7px 9px; cursor: pointer; }
+    .sampler-page { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 18px 0 8px; gap: 14px; }
+
+    /* DAW-style transport bar */
+    .sam-transport { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 0; padding: 11px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+    .sam-tx-src { display: flex; align-items: center; gap: 9px; padding-right: 18px; margin-right: 4px; border-right: 1px solid var(--rule); }
+    .sam-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 0; }
+    .sam-group { display: flex; align-items: center; gap: 9px; padding: 0 16px; border-right: 1px solid var(--rule); }
+    .sam-group:last-child { border-right: none; }
+    .sam-group-label { font-family: var(--mono); font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--fg-faint); }
+    .sam-ctl { display: flex; align-items: center; gap: 7px; font-size: 9px; letter-spacing: 0.13em; text-transform: uppercase; color: var(--fg-dim); }
+    .sam-ctl input[type=range] { width: 82px; accent-color: var(--fg); }
+    .sam-ctl-val { color: var(--fg); font-variant-numeric: tabular-nums; min-width: 36px; }
+    .sam-select { font-family: var(--mono); font-size: 10px; letter-spacing: 0.05em; color: var(--fg); background: none; border: 1px solid var(--rule); padding: 6px 8px; cursor: pointer; }
     .sam-select option { background: var(--bg); color: var(--fg); }
+    .sam-num { font-family: var(--mono); font-size: 10px; color: var(--fg); background: none; border: 1px solid var(--rule); padding: 4px 5px; width: 50px; text-align: center; }
     .sam-trigmode { display: inline-flex; border: 1px solid var(--rule); }
-    .sam-seg { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-dim); background: none; border: none; padding: 7px 12px; cursor: pointer; }
+    .sam-seg { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-dim); background: none; border: none; padding: 6px 10px; cursor: pointer; }
     .sam-seg + .sam-seg { border-left: 1px solid var(--rule); }
     .sam-seg.active { color: var(--bg); background: var(--fg); }
     .sam-seg:hover:not(.active) { color: var(--fg); }
-    .sam-stopbtn { font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-dim); background: none; border: 1px solid var(--rule); padding: 7px 14px; cursor: pointer; margin-left: auto; }
+    .sam-stopbtn { font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-dim); background: none; border: 1px solid var(--rule); padding: 6px 12px; cursor: pointer; }
     .sam-stopbtn:hover { color: var(--fg); border-color: var(--fg-dim); }
-    .sam-wave-wrap { position: relative; width: 100%; height: clamp(220px, 42vh, 380px); cursor: crosshair; border: 1px solid var(--rule); margin-top: 12px; }
-    #sam-wave { display: block; width: 100%; height: 100%; }
-    .sam-controls { display: flex; flex-wrap: wrap; gap: 16px 0; margin-top: 18px; align-items: center; }
-    .sam-group { display: flex; align-items: center; gap: 12px; padding: 0 22px; border-right: 1px solid var(--rule); }
-    .sam-group:first-child { padding-left: 0; }
-    .sam-group:last-child { border-right: none; }
-    .sam-group-label { font-family: var(--mono); font-size: 8px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--fg-faint); }
-    .sam-ctl { display: flex; align-items: center; gap: 10px; font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-dim); }
-    .sam-ctl input[type=range] { width: 130px; accent-color: var(--fg); }
-    .sam-ctl-val { color: var(--fg); font-variant-numeric: tabular-nums; min-width: 42px; }
-    .sam-num { font-family: var(--mono); font-size: 11px; color: var(--fg); background: none; border: 1px solid var(--rule); padding: 5px 6px; width: 56px; text-align: center; }
-    .sam-tgl { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--fg-dim); background: none; border: 1px solid var(--rule); padding: 6px 11px; cursor: pointer; align-self: center; transition: color 0.15s, background 0.15s, border-color 0.15s; }
+    .sam-tgl { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--fg-dim); background: none; border: 1px solid var(--rule); padding: 5px 9px; cursor: pointer; transition: color 0.15s, background 0.15s, border-color 0.15s; }
     .sam-tgl.active { color: var(--bg); background: var(--fg); border-color: var(--fg); }
     .sam-tgl:hover:not(.active) { color: var(--fg); border-color: var(--fg-dim); }
-    .sam-hint { margin-top: 16px; font-size: 9px; letter-spacing: 0.08em; line-height: 1.7; color: var(--fg-faint); max-width: 760px; }
-    .sam-strips { display: flex; gap: 10px; margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--rule); overflow-x: auto; align-items: flex-start; min-height: 8px; }
-    .sam-strip { flex: 0 0 96px; width: 96px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px; border: 1px solid var(--rule); }
+
+    /* Section heads */
+    .sam-section-head { display: flex; align-items: baseline; gap: 12px; }
+    .sam-section-title { font-family: var(--display); font-size: 17px; }
+    .sam-section-sub, .sam-lcd { font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sam-lcd { color: var(--fg-dim); margin-left: auto; }
+
+    /* Sampler stage (slim slice) */
+    .sam-stage { flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px; }
+    .sam-wave-wrap { position: relative; width: 100%; height: clamp(108px, 17vh, 168px); cursor: crosshair; border: 1px solid var(--rule); }
+    #sam-wave { display: block; width: 100%; height: 100%; }
+    .sam-hint { font-size: 8px; letter-spacing: 0.06em; line-height: 1.65; color: var(--fg-faint); max-width: 860px; }
+
+    /* Mixer (primary focus) */
+    .sam-mixer { flex: 1 1 auto; display: flex; flex-direction: column; gap: 10px; min-height: 240px; }
+    .sam-strips { flex: 1; display: flex; gap: 10px; padding: 4px 0 2px; overflow-x: auto; align-items: stretch; }
+    .sam-strips:empty::before { content: 'Trigger a loop to add a channel'; align-self: center; margin: auto; font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-faint); }
+    .sam-strip { flex: 0 0 108px; width: 108px; display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 11px 9px; border: 1px solid var(--rule); }
     .strip-head { display: flex; align-items: center; gap: 4px; width: 100%; }
     .strip-name { flex: 1; font-size: 8px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .strip-x { font-family: var(--mono); font-size: 13px; line-height: 1; color: var(--fg-dim); background: none; border: none; cursor: pointer; padding: 0 2px; }
     .strip-x:hover { color: var(--fg); }
-    .strip-thumb { width: 100%; height: 40px; display: block; border: 1px solid var(--rule); }
+    .strip-thumb { width: 100%; height: 46px; display: block; border: 1px solid var(--rule); }
     .strip-knob { display: flex; flex-direction: column; align-items: center; gap: 3px; }
-    .strip-pan-knob { width: 38px; height: 38px; cursor: ns-resize; }
+    .strip-pan-knob { width: 42px; height: 42px; cursor: ns-resize; }
     .strip-cap { font-size: 7px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); }
-    .strip-fader-cv { width: 34px; height: 120px; cursor: ns-resize; }
+    .strip-fader-cv { width: 38px; flex: 1 1 auto; min-height: 120px; cursor: ns-resize; }
     .strip-db { font-size: 8px; letter-spacing: 0.06em; color: var(--fg-dim); font-variant-numeric: tabular-nums; }
   </style>
 </head>
@@ -127,48 +139,60 @@
     </header>
 
     <main class="sampler-page" id="sampler" aria-label="Sampler">
-      <div class="sampler-masthead">
-        <h1 class="sampler-h1">Sampler</h1>
-        <span id="sam-lcd" class="sam-lcd"></span>
-      </div>
-      <div class="sam-bar">
-        <select id="sam-source" class="sam-select" aria-label="Sample source"></select>
-        <div class="sam-trigmode" role="group" aria-label="Trigger mode">
-          <button type="button" class="sam-seg active" data-mode="latch" aria-pressed="true">Latch</button>
-          <button type="button" class="sam-seg" data-mode="hold" aria-pressed="false">Hold</button>
+      <div class="sam-transport">
+        <div class="sam-tx-src">
+          <select id="sam-source" class="sam-select" aria-label="Sample source"></select>
+          <div class="sam-trigmode" role="group" aria-label="Trigger mode">
+            <button type="button" class="sam-seg active" data-mode="latch" aria-pressed="true">Latch</button>
+            <button type="button" class="sam-seg" data-mode="hold" aria-pressed="false">Hold</button>
+          </div>
+          <button type="button" id="sam-stop" class="sam-stopbtn">Stop</button>
         </div>
-        <button type="button" id="sam-stop" class="sam-stopbtn">Stop</button>
-      </div>
-      <div class="sam-wave-wrap" id="sam-wave-wrap">
-        <canvas id="sam-wave" role="img" aria-label="Sample waveform"></canvas>
-      </div>
-      <div class="sam-controls">
-        <div class="sam-group">
-          <span class="sam-group-label">Tempo</span>
-          <span class="sam-ctl"><span>Song</span><span id="sam-songbpm" class="sam-ctl-val">— BPM</span></span>
-          <button type="button" class="sam-tgl" id="sam-half" title="Halve the song's detected tempo (fix octave error)">÷2</button>
-          <button type="button" class="sam-tgl" id="sam-double" title="Double the song's detected tempo (fix octave error)">×2</button>
-          <label class="sam-ctl"><span>Master</span><input type="number" id="sam-bpm" class="sam-num" min="40" max="240" step="1" value="120" aria-label="Master BPM"></label>
-          <button type="button" class="sam-tgl" id="sam-setmaster" title="Set the master tempo &amp; key from the selected song">Set master</button>
-        </div>
-        <div class="sam-group">
-          <span class="sam-group-label">Key</span>
-          <span class="sam-ctl"><span>Master</span><span id="sam-key" class="sam-ctl-val">—</span></span>
-          <button type="button" class="sam-tgl active" id="sam-keymatch" aria-pressed="true">Key match</button>
-          <label class="sam-ctl"><span>Pitch</span><input type="range" id="sam-pitch" min="-12" max="12" step="1" value="0" aria-label="Pitch in semitones"><span id="sam-pitch-val" class="sam-ctl-val">+0 st</span></label>
-        </div>
-        <div class="sam-group">
-          <span class="sam-group-label">Grid</span>
-          <button type="button" class="sam-tgl active" id="sam-quant" aria-pressed="true">Quantize</button>
-          <label class="sam-ctl"><span>Snap</span><select id="sam-grid" class="sam-select"><option value="16n">1/16</option><option value="8n">1/8</option><option value="4n" selected>1/4</option><option value="2n">1/2</option><option value="1m">Bar</option></select></label>
-        </div>
-        <div class="sam-group">
-          <span class="sam-group-label">Mix</span>
-          <label class="sam-ctl"><span>Volume</span><input type="range" id="sam-vol" min="0" max="1" step="0.01" value="1" aria-label="Volume"><span id="sam-vol-val" class="sam-ctl-val">100%</span></label>
+        <div class="sam-controls">
+          <div class="sam-group">
+            <span class="sam-group-label">Tempo</span>
+            <span class="sam-ctl"><span>Song</span><span id="sam-songbpm" class="sam-ctl-val">— BPM</span></span>
+            <button type="button" class="sam-tgl" id="sam-half" title="Halve the song's detected tempo (fix octave error)">÷2</button>
+            <button type="button" class="sam-tgl" id="sam-double" title="Double the song's detected tempo (fix octave error)">×2</button>
+            <label class="sam-ctl"><span>Master</span><input type="number" id="sam-bpm" class="sam-num" min="40" max="240" step="1" value="120" aria-label="Master BPM"></label>
+            <button type="button" class="sam-tgl" id="sam-setmaster" title="Set the master tempo &amp; key from the selected song">Set master</button>
+          </div>
+          <div class="sam-group">
+            <span class="sam-group-label">Key</span>
+            <span class="sam-ctl"><span>Master</span><span id="sam-key" class="sam-ctl-val">—</span></span>
+            <button type="button" class="sam-tgl active" id="sam-keymatch" aria-pressed="true">Key match</button>
+            <label class="sam-ctl"><span>Pitch</span><input type="range" id="sam-pitch" min="-12" max="12" step="1" value="0" aria-label="Pitch in semitones"><span id="sam-pitch-val" class="sam-ctl-val">+0 st</span></label>
+          </div>
+          <div class="sam-group">
+            <span class="sam-group-label">Grid</span>
+            <button type="button" class="sam-tgl active" id="sam-quant" aria-pressed="true">Quantize</button>
+            <label class="sam-ctl"><span>Snap</span><select id="sam-grid" class="sam-select"><option value="16n">1/16</option><option value="8n">1/8</option><option value="4n" selected>1/4</option><option value="2n">1/2</option><option value="1m">Bar</option></select></label>
+          </div>
+          <div class="sam-group">
+            <span class="sam-group-label">Mix</span>
+            <label class="sam-ctl"><span>Volume</span><input type="range" id="sam-vol" min="0" max="1" step="0.01" value="1" aria-label="Volume"><span id="sam-vol-val" class="sam-ctl-val">100%</span></label>
+          </div>
         </div>
       </div>
-      <p class="sam-hint">Click drops a loop one grid-step long · drag a loop’s edge to resize, its body to move · click a loop’s × or right-click it to remove · Stop clears all · scroll to zoom · ⇧-click sets the downbeat · ÷2/×2 fix octave · ⌥-click resets zoom</p>
-      <div class="sam-strips" id="sam-strips" aria-label="Channel strips"></div>
+
+      <section class="sam-stage" aria-label="Sampler">
+        <div class="sam-section-head">
+          <span class="sam-section-title">Sampler</span>
+          <span id="sam-lcd" class="sam-lcd"></span>
+        </div>
+        <div class="sam-wave-wrap" id="sam-wave-wrap">
+          <canvas id="sam-wave" role="img" aria-label="Sample waveform"></canvas>
+        </div>
+        <p class="sam-hint">Click drops a loop one grid-step long · drag a loop’s edge to resize, its body to move · click a loop’s × or right-click it to remove · Stop clears all · scroll to zoom · ⇧-click sets the downbeat · ÷2/×2 fix octave · ⌥-click resets zoom</p>
+      </section>
+
+      <section class="sam-mixer" aria-label="Mixer">
+        <div class="sam-section-head">
+          <span class="sam-section-title">Mixer</span>
+          <span class="sam-section-sub">one channel per loop</span>
+        </div>
+        <div class="sam-strips" id="sam-strips" aria-label="Channel strips"></div>
+      </section>
     </main>
   </div>
 

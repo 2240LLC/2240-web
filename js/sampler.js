@@ -322,8 +322,8 @@
   }
   function drawPanKnob(v) {
     const cv = v.strip && v.strip.querySelector('.strip-pan-knob'); if (!cv) return;
-    const dpr = window.devicePixelRatio || 1, S = 38; cv.width = S * dpr; cv.height = S * dpr;
-    const g = cv.getContext('2d'), fg = fgRGB(), cx = cv.width / 2, cy = cv.height / 2, r = 13 * dpr;
+    const dpr = window.devicePixelRatio || 1; cv.width = Math.round((cv.offsetWidth || 38) * dpr); cv.height = Math.round((cv.offsetHeight || 38) * dpr);
+    const g = cv.getContext('2d'), fg = fgRGB(), cx = cv.width / 2, cy = cv.height / 2, r = Math.min(cx, cy) - 4 * dpr;
     g.clearRect(0, 0, cv.width, cv.height); g.lineCap = 'round';
     const a0 = 0.75 * Math.PI, a1 = 2.25 * Math.PI, af = a0 + ((v.pan + 1) / 2) * 1.5 * Math.PI;
     g.beginPath(); g.arc(cx, cy, r, a0, a1); g.strokeStyle = `rgba(${fg},0.2)`; g.lineWidth = 2 * dpr; g.stroke();
@@ -341,7 +341,7 @@
   }
   function drawFader(v) {
     const cv = v.strip && v.strip.querySelector('.strip-fader-cv'); if (!cv) return;
-    const dpr = window.devicePixelRatio || 1, W = 34, Hh = 120; cv.width = W * dpr; cv.height = Hh * dpr;
+    const dpr = window.devicePixelRatio || 1; cv.width = Math.round((cv.offsetWidth || 34) * dpr); cv.height = Math.round((cv.offsetHeight || 120) * dpr);
     const g = cv.getContext('2d'), fg = fgRGB(), cx = cv.width / 2, top = 8 * dpr, bot = cv.height - 8 * dpr, h = bot - top, y = bot - v.vol * h;
     g.clearRect(0, 0, cv.width, cv.height); g.lineCap = 'round';
     g.strokeStyle = `rgba(${fg},0.2)`; g.lineWidth = 2 * dpr; g.beginPath(); g.moveTo(cx, top); g.lineTo(cx, bot); g.stroke();
