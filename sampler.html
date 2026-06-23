@@ -117,7 +117,11 @@
     .sam-lcd { color: var(--fg-dim); margin-left: auto; }
 
     /* Sampler stage (slim slice) */
-    .sam-stage { flex: 0 0 auto; display: flex; flex-direction: column; gap: 8px; }
+    .sam-stage { flex: 0 0 auto; display: flex; flex-direction: column; gap: 9px; }
+    .sam-stage-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 9px 0; }
+    .sam-stage-title { font-family: var(--display); font-size: 16px; padding-right: 14px; }
+    .sam-tool { display: flex; align-items: center; gap: 8px; padding: 0 14px; border-left: 1px solid var(--rule); }
+    .sam-tool-label { font-family: var(--mono); font-size: 8px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--fg-faint); }
     .sam-wave-wrap { position: relative; width: 100%; height: clamp(108px, 17vh, 168px); cursor: crosshair; border: 1px solid var(--rule); }
     #sam-wave { display: block; width: 100%; height: 100%; }
     .sam-hint { font-size: 8px; letter-spacing: 0.06em; line-height: 1.65; color: var(--fg-faint); max-width: 860px; }
@@ -158,21 +162,10 @@
     <main class="sampler-page" id="sampler" aria-label="Sampler">
       <div class="sam-transport">
         <div class="sam-mod">
-          <span class="sam-mod-label">Source</span>
-          <select id="sam-source" class="sam-select sam-select-wide" aria-label="Sample source"></select>
-        </div>
-
-        <div class="sam-mod">
           <span class="sam-mod-label">Tempo</span>
           <div class="sam-mod-row">
             <input type="number" id="sam-bpm" class="sam-hero sam-hero-num" min="40" max="240" step="1" value="120" aria-label="Master tempo">
             <span class="sam-unit">BPM</span>
-          </div>
-          <div class="sam-mod-sub">
-            <span>Song</span><span id="sam-songbpm">—</span>
-            <button type="button" class="sam-tgl sam-mini" id="sam-half" title="Halve the song's detected tempo (fix octave error)">÷2</button>
-            <button type="button" class="sam-tgl sam-mini" id="sam-double" title="Double the song's detected tempo (fix octave error)">×2</button>
-            <button type="button" class="sam-tgl sam-mini" id="sam-setmaster" title="Set master tempo &amp; key from the selected song">Set master</button>
           </div>
         </div>
 
@@ -181,18 +174,6 @@
           <div class="sam-mod-row">
             <span id="sam-key" class="sam-hero">—</span>
             <button type="button" class="sam-tgl active" id="sam-keymatch" aria-pressed="true" title="Transpose loops to the master key">Match</button>
-          </div>
-          <div class="sam-mod-sub">
-            <span>Pitch</span>
-            <span class="sam-slider"><input type="range" id="sam-pitch" min="-12" max="12" step="1" value="0" aria-label="Pitch in semitones"><span id="sam-pitch-val" class="sam-val">+0 st</span></span>
-          </div>
-        </div>
-
-        <div class="sam-mod">
-          <span class="sam-mod-label">Grid</span>
-          <div class="sam-mod-row">
-            <button type="button" class="sam-tgl active" id="sam-quant" aria-pressed="true" title="Snap loops to the grid">Quantize</button>
-            <select id="sam-grid" class="sam-select sam-grid-sel" aria-label="Grid size"><option value="16n">1/16</option><option value="8n">1/8</option><option value="4n" selected>1/4</option><option value="2n">1/2</option><option value="1m">Bar</option></select>
           </div>
         </div>
 
@@ -211,14 +192,34 @@
               <button type="button" class="sam-seg active" data-mode="latch" aria-pressed="true">Latch</button>
               <button type="button" class="sam-seg" data-mode="hold" aria-pressed="false">Hold</button>
             </div>
-            <button type="button" id="sam-stop" class="sam-stopbtn">Stop</button>
+            <button type="button" id="sam-stop" class="sam-stopbtn">Stop all</button>
           </div>
         </div>
       </div>
 
       <section class="sam-stage" aria-label="Sampler">
-        <div class="sam-section-head">
-          <span class="sam-section-title">Sampler</span>
+        <div class="sam-stage-bar">
+          <span class="sam-stage-title">Sampler</span>
+          <div class="sam-tool">
+            <span class="sam-tool-label">Source</span>
+            <select id="sam-source" class="sam-select sam-select-wide" aria-label="Sample source"></select>
+          </div>
+          <div class="sam-tool">
+            <span class="sam-tool-label">Detected</span>
+            <span id="sam-songbpm" class="sam-val">—</span>
+            <button type="button" class="sam-tgl sam-mini" id="sam-half" title="Halve the detected tempo (fix octave error)">÷2</button>
+            <button type="button" class="sam-tgl sam-mini" id="sam-double" title="Double the detected tempo (fix octave error)">×2</button>
+            <button type="button" class="sam-tgl sam-mini" id="sam-setmaster" title="Set master tempo &amp; key from this sample">Set master</button>
+          </div>
+          <div class="sam-tool">
+            <span class="sam-tool-label">Pitch</span>
+            <span class="sam-slider"><input type="range" id="sam-pitch" min="-12" max="12" step="1" value="0" aria-label="Pitch in semitones"><span id="sam-pitch-val" class="sam-val">+0 st</span></span>
+          </div>
+          <div class="sam-tool">
+            <span class="sam-tool-label">Grid</span>
+            <button type="button" class="sam-tgl active" id="sam-quant" aria-pressed="true" title="Snap loops to the grid">Quantize</button>
+            <select id="sam-grid" class="sam-select sam-grid-sel" aria-label="Grid size"><option value="16n">1/16</option><option value="8n">1/8</option><option value="4n" selected>1/4</option><option value="2n">1/2</option><option value="1m">Bar</option></select>
+          </div>
           <span id="sam-lcd" class="sam-lcd"></span>
         </div>
         <div class="sam-wave-wrap" id="sam-wave-wrap">
