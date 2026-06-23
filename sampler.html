@@ -128,10 +128,10 @@
 
     /* Mixer (primary focus) */
     .sam-mixer { flex: 1 1 auto; display: flex; flex-direction: column; gap: 10px; min-height: 240px; }
-    .sam-mixer-body { flex: 1 1 auto; display: flex; gap: 12px; min-height: 0; }
+    .sam-mixer-body { flex: 1 1 auto; display: flex; gap: 12px; min-height: 0; align-items: flex-end; }
     .sam-strip-master { flex: 0 0 92px; width: 92px; border-color: rgba(var(--fg-rgb), 0.32); background: rgba(var(--fg-rgb), 0.025); }
     .sam-strip-master .strip-name { color: var(--fg); letter-spacing: 0.12em; }
-    .sam-strips { flex: 1 1 auto; min-width: 0; display: flex; gap: 10px; padding: 4px 0 2px; overflow-x: auto; align-items: stretch; }
+    .sam-strips { flex: 1 1 auto; min-width: 0; display: flex; gap: 10px; padding: 4px 0 2px; overflow-x: auto; align-items: flex-end; }
     .sam-strips:empty::before { content: 'Trigger a loop to add a channel'; align-self: center; margin: auto; font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--fg-faint); }
     .sam-strip { flex: 0 0 108px; width: 108px; display: flex; flex-direction: column; align-items: center; gap: 9px; padding: 11px 9px; border: 1px solid var(--rule); }
     .strip-head { display: flex; align-items: center; gap: 4px; width: 100%; }
@@ -142,7 +142,7 @@
     .strip-knob { display: flex; flex-direction: column; align-items: center; gap: 3px; }
     .strip-pan-knob { width: 42px; height: 42px; cursor: ns-resize; }
     .strip-cap { font-size: 7px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); }
-    .strip-fader-row { display: flex; align-items: stretch; justify-content: center; gap: 7px; width: 100%; flex: 1 1 auto; min-height: 120px; }
+    .strip-fader-row { display: flex; align-items: stretch; justify-content: center; gap: 7px; width: 100%; height: clamp(150px, 24vh, 240px); flex: 0 0 auto; }
     .strip-fader-cv { width: 30px; height: 100%; display: block; cursor: ns-resize; }
     .strip-meter { width: 16px; height: 100%; display: block; }
     .strip-db { font-size: 8px; letter-spacing: 0.06em; color: var(--fg-dim); font-variant-numeric: tabular-nums; }
