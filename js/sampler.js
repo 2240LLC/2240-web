@@ -188,7 +188,8 @@
     gp.loop = !!opts.loop; gp.loopStart = startSec; gp.loopEnd = startSec + durSec;
     gp.playbackRate = r; gp.detune = (keyShift(cur.keyPc) + (manualSemis[activeId] || 0)) * 100;
     gp.grainSize = 0.1; gp.overlap = 0.05;
-    gp.connect(ensureOut());
+    const chGain = new Tone.Gain(1), pan = new Tone.Panner(0);
+    gp.connect(chGain); chGain.connect(pan); pan.connect(ensureOut());
     let t0;
     if (quantize) {
       const T = Tone.getTransport();
@@ -196,11 +197,11 @@
       t0 = T.nextSubdivision(quantGrid);
       gp.start(t0, startSec);
     } else { t0 = nowt(); gp.start(undefined, startSec); }
-    const v = { gp, srcId: activeId, bpm: cur.bpm, keyPc: cur.keyPc, looping: gp.loop, loopStart: startSec, loopEnd: startSec + durSec, t0, posAtT0: startSec, rate: r };
-    voices.push(v); startAnim();
+    const v = { gp, gain: chGain, panner: pan, vol: 1, pan: 0, buf: cur.audioBuffer, srcId: activeId, bpm: cur.bpm, keyPc: cur.keyPc, looping: gp.loop, loopStart: startSec, loopEnd: startSec + durSec, t0, posAtT0: startSec, rate: r };
+    voices.push(v); createStrip(v); startAnim();
     return v;
   }
-  function stopVoice(v) { try { v.gp.stop(); v.gp.dispose(); } catch (_) {} voices = voices.filter(x => x !== v); }
+  function stopVoice(v) { try { v.gp.stop(); v.gp.dispose(); if (v.gain) v.gain.dispose(); if (v.panner) v.panner.dispose(); } catch (_) {} if (v.strip) v.strip.remove(); voices = voices.filter(x => x !== v); }
   function stopAll() { voices.slice().forEach(stopVoice); renderWave(); }
 
   function voicePos(v, now) {
@@ -281,7 +282,85 @@
   }
   let rafId = null;
   function startAnim() { if (!rafId) loop(); }
-  function loop() { renderWave(); rafId = voices.length ? requestAnimationFrame(loop) : null; }
+  function loop() { renderWave(); voices.forEach(renderThumb); rafId = voices.length ? requestAnimationFrame(loop) : null; }
+
+  // ── Channel strips (one per loop) ───────────────────────────────────────────
+  function createStrip(v) {
+    const wrap = document.getElementById('sam-strips'); if (!wrap) return;
+    const el = document.createElement('div'); el.className = 'sam-strip';
+    el.innerHTML =
+      '<div class="strip-head"><span class="strip-name"></span><button type="button" class="strip-x" aria-label="Remove">×</button></div>' +
+      '<canvas class="strip-thumb"></canvas>' +
+      '<div class="strip-knob"><canvas class="strip-pan-knob"></canvas><span class="strip-cap">Pan</span></div>' +
+      '<canvas class="strip-fader-cv"></canvas>' +
+      '<span class="strip-db">0.0 dB</span>';
+    wrap.appendChild(el);
+    v.strip = el;
+    const src = SOURCES.find(s => s.id === v.srcId);
+    el.querySelector('.strip-name').textContent = src ? src.label : v.srcId;
+    el.querySelector('.strip-x').addEventListener('click', () => stopVoice(v));
+    computeThumb(v);
+    wirePan(el.querySelector('.strip-pan-knob'), v); drawPanKnob(v);
+    wireFader(el.querySelector('.strip-fader-cv'), v); drawFader(v); updateDb(v);
+  }
+  function computeThumb(v) {
+    const cv = v.strip && v.strip.querySelector('.strip-thumb'); if (!cv || !v.buf) return;
+    const dpr = window.devicePixelRatio || 1;
+    cv.width = Math.round(cv.offsetWidth * dpr); cv.height = Math.round(cv.offsetHeight * dpr);
+    const ch = v.buf.getChannelData(0), sr = v.buf.sampleRate;
+    const s0 = Math.floor(v.loopStart * sr), s1 = Math.floor(v.loopEnd * sr), span = Math.max(1, s1 - s0);
+    const barW = 2 * dpr, n = Math.max(1, Math.floor(cv.width / barW)), step = Math.max(1, Math.floor(span / n)), arr = [];
+    for (let i = 0; i < n; i++) { let p = 0; const off = s0 + i * step; for (let j = 0; j < step; j++) { const idx = off + j; if (idx >= s1) break; const x = Math.abs(ch[idx] || 0); if (x > p) p = x; } arr.push(p); }
+    v.thumbBars = arr; renderThumb(v);
+  }
+  function renderThumb(v) {
+    const cv = v.strip && v.strip.querySelector('.strip-thumb'); if (!cv || !v.thumbBars) return;
+    const g = cv.getContext('2d'), W = cv.width, H = cv.height, dpr = window.devicePixelRatio || 1, barW = 2 * dpr, fg = fgRGB();
+    g.clearRect(0, 0, W, H);
+    v.thumbBars.forEach((p, i) => { const bh = Math.max(dpr, p * H * 0.8); g.fillStyle = `rgba(${fg},${(0.3 + p * 0.45).toFixed(2)})`; g.fillRect(i * barW, (H - bh) / 2, dpr, bh); });
+    if (voices.includes(v)) { const now = nowt() - audioLat(), len = v.loopEnd - v.loopStart || 1e-6, frac = clamp01((voicePos(v, now) - v.loopStart) / len); g.fillStyle = `rgba(${fg},0.95)`; g.fillRect(Math.round(frac * W), 0, Math.max(1, dpr), H); }
+  }
+  function drawPanKnob(v) {
+    const cv = v.strip && v.strip.querySelector('.strip-pan-knob'); if (!cv) return;
+    const dpr = window.devicePixelRatio || 1, S = 38; cv.width = S * dpr; cv.height = S * dpr;
+    const g = cv.getContext('2d'), fg = fgRGB(), cx = cv.width / 2, cy = cv.height / 2, r = 13 * dpr;
+    g.clearRect(0, 0, cv.width, cv.height); g.lineCap = 'round';
+    const a0 = 0.75 * Math.PI, a1 = 2.25 * Math.PI, af = a0 + ((v.pan + 1) / 2) * 1.5 * Math.PI;
+    g.beginPath(); g.arc(cx, cy, r, a0, a1); g.strokeStyle = `rgba(${fg},0.2)`; g.lineWidth = 2 * dpr; g.stroke();
+    g.beginPath(); g.arc(cx, cy, r, a0, af); g.strokeStyle = `rgba(${fg},0.7)`; g.lineWidth = 2 * dpr; g.stroke();
+    g.beginPath(); g.moveTo(cx, cy); g.lineTo(cx + r * 0.8 * Math.cos(af), cy + r * 0.8 * Math.sin(af)); g.strokeStyle = `rgba(${fg},0.9)`; g.lineWidth = 2 * dpr; g.stroke();
+  }
+  function wirePan(cv, v) {
+    cv.addEventListener('pointerdown', (e) => {
+      const y0 = e.clientY, p0 = v.pan;
+      const mv = (ev) => { v.pan = Math.max(-1, Math.min(1, p0 + (y0 - ev.clientY) * 0.02)); v.panner.pan.value = v.pan; drawPanKnob(v); };
+      const up = () => { document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); };
+      document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); e.preventDefault();
+    });
+    cv.addEventListener('dblclick', () => { v.pan = 0; v.panner.pan.value = 0; drawPanKnob(v); });
+  }
+  function drawFader(v) {
+    const cv = v.strip && v.strip.querySelector('.strip-fader-cv'); if (!cv) return;
+    const dpr = window.devicePixelRatio || 1, W = 34, Hh = 120; cv.width = W * dpr; cv.height = Hh * dpr;
+    const g = cv.getContext('2d'), fg = fgRGB(), cx = cv.width / 2, top = 8 * dpr, bot = cv.height - 8 * dpr, h = bot - top, y = bot - v.vol * h;
+    g.clearRect(0, 0, cv.width, cv.height); g.lineCap = 'round';
+    g.strokeStyle = `rgba(${fg},0.2)`; g.lineWidth = 2 * dpr; g.beginPath(); g.moveTo(cx, top); g.lineTo(cx, bot); g.stroke();
+    g.strokeStyle = `rgba(${fg},0.6)`; g.beginPath(); g.moveTo(cx, bot); g.lineTo(cx, y); g.stroke();
+    g.fillStyle = `rgba(${fg},0.92)`; g.fillRect(cx - 9 * dpr, y - 3 * dpr, 18 * dpr, 6 * dpr);
+  }
+  function wireFader(cv, v) {
+    const setY = (clientY) => { const r = cv.getBoundingClientRect(), top = 8, bot = r.height - 8, h = bot - top; v.vol = Math.max(0, Math.min(1, (bot - (clientY - r.top)) / h)); v.gain.gain.value = v.vol; drawFader(v); updateDb(v); };
+    cv.addEventListener('pointerdown', (e) => {
+      setY(e.clientY);
+      const mv = (ev) => setY(ev.clientY);
+      const up = () => { document.removeEventListener('pointermove', mv); document.removeEventListener('pointerup', up); };
+      document.addEventListener('pointermove', mv); document.addEventListener('pointerup', up); e.preventDefault();
+    });
+  }
+  function updateDb(v) {
+    const el = v.strip && v.strip.querySelector('.strip-db'); if (!el) return;
+    el.textContent = v.vol <= 0.001 ? '−∞ dB' : (20 * Math.log10(v.vol)).toFixed(1) + ' dB';
+  }
 
   // ── LCD ─────────────────────────────────────────────────────────────────────
   function setLcd(msg) {
@@ -349,18 +428,18 @@
         const t = snap(timeAt(f));
         if (drag.edge === 'start') v.loopStart = Math.max(0, Math.min(t, v.loopEnd - u));
         else v.loopEnd = Math.min(dur, Math.max(t, v.loopStart + u));
-        v.gp.loopStart = v.loopStart; v.gp.loopEnd = v.loopEnd; renderWave();
+        v.gp.loopStart = v.loopStart; v.gp.loopEnd = v.loopEnd; renderWave(); computeThumb(v);
       } else if (drag.mode === 'move') {
         let ns = snap(timeAt(f) - drag.grabT);
         ns = Math.max(0, Math.min(ns, dur - drag.len));
         v.loopStart = ns; v.loopEnd = ns + drag.len;
-        v.gp.loopStart = ns; v.gp.loopEnd = ns + drag.len; renderWave();
+        v.gp.loopStart = ns; v.gp.loopEnd = ns + drag.len; renderWave(); computeThumb(v);
       } else {
         if (!drag.moved) return;
         const t2 = snap(timeAt(f));
         let sc = Math.min(drag.anchor, t2), en = Math.max(drag.anchor, t2);
         if (en - sc < u) en = Math.min(sc + u, dur);
-        v.loopStart = sc; v.loopEnd = en; v.gp.loopStart = sc; v.gp.loopEnd = en; renderWave();
+        v.loopStart = sc; v.loopEnd = en; v.gp.loopStart = sc; v.gp.loopEnd = en; renderWave(); computeThumb(v);
       }
     });
     const end = () => {
@@ -456,9 +535,11 @@
     document.getElementById('sam-stop').addEventListener('click', stopAll);
   }
 
-  new MutationObserver(renderWave).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', renderWave);
-  let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(computeBars, 150); });
+  function repaintStrips() { voices.forEach(v => { computeThumb(v); drawPanKnob(v); drawFader(v); }); }
+  function onTheme() { renderWave(); repaintStrips(); }
+  new MutationObserver(onTheme).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', onTheme);
+  let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { computeBars(); repaintStrips(); }, 150); });
 
   // ── Init ────────────────────────────────────────────────────────────────────
   async function init() {

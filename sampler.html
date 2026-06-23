@@ -95,6 +95,18 @@
     .sam-tgl.active { color: var(--bg); background: var(--fg); border-color: var(--fg); }
     .sam-tgl:hover:not(.active) { color: var(--fg); border-color: var(--fg-dim); }
     .sam-hint { margin-top: 16px; font-size: 9px; letter-spacing: 0.08em; line-height: 1.7; color: var(--fg-faint); max-width: 760px; }
+    .sam-strips { display: flex; gap: 10px; margin-top: 26px; padding-top: 18px; border-top: 1px solid var(--rule); overflow-x: auto; align-items: flex-start; min-height: 8px; }
+    .sam-strip { flex: 0 0 96px; width: 96px; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px; border: 1px solid var(--rule); }
+    .strip-head { display: flex; align-items: center; gap: 4px; width: 100%; }
+    .strip-name { flex: 1; font-size: 8px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--fg-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .strip-x { font-family: var(--mono); font-size: 13px; line-height: 1; color: var(--fg-dim); background: none; border: none; cursor: pointer; padding: 0 2px; }
+    .strip-x:hover { color: var(--fg); }
+    .strip-thumb { width: 100%; height: 40px; display: block; border: 1px solid var(--rule); }
+    .strip-knob { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .strip-pan-knob { width: 38px; height: 38px; cursor: ns-resize; }
+    .strip-cap { font-size: 7px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--fg-faint); }
+    .strip-fader-cv { width: 34px; height: 120px; cursor: ns-resize; }
+    .strip-db { font-size: 8px; letter-spacing: 0.06em; color: var(--fg-dim); font-variant-numeric: tabular-nums; }
   </style>
 </head>
 <body>
@@ -156,6 +168,7 @@
         </div>
       </div>
       <p class="sam-hint">Click drops a loop one grid-step long · drag a loop’s edge to resize, its body to move · click a loop’s × or right-click it to remove · Stop clears all · scroll to zoom · ⇧-click sets the downbeat · ÷2/×2 fix octave · ⌥-click resets zoom</p>
+      <div class="sam-strips" id="sam-strips" aria-label="Channel strips"></div>
     </main>
   </div>
 
